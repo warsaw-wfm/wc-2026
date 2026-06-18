@@ -19,8 +19,8 @@ const MATCHES_INDEX = require('./matches-index.json');
 const matchIndex = {};
 MATCHES_INDEX.forEach(m => { matchIndex[m.matchId] = m; });
 
-const RECIPIENT = process.env.BACKUP_EMAIL || 'warsawwfm@gmail.com';
-const SENDER    = process.env.GMAIL_USER   || 'warsawwfm@gmail.com';
+const RECIPIENT = process.env.BACKUP_EMAIL || 'imdadkp007@gmail.com';
+const SENDER    = process.env.GMAIL_USER   || 'imdadkp007@gmail.com';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
