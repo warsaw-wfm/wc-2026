@@ -3,36 +3,28 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── Users ────────────────────────────────────────────────────────────
-    // Anyone can read users (leaderboard)
-    // Only the user themselves can write their own doc
+    // Anyone can read (leaderboard). Anyone can write EXCEPT escalating to admin.
     match /users/{userId} {
       allow read: if true;
-      allow create: if request.resource.data.isAdminAccount != true
-                    && request.resource.data.isAdmin != true;
-      allow update: if request.auth == null
-                    // PIN-based app: allow update only to safe fields
-                    && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['totalPoints', 'exactScores', 'correctResults',
-                                   'championPick', 'goldenBootPick', 'nickname']);
+      allow create: if request.resource.data.get('isAdmin', false) == false
+                    && request.resource.data.get('isAdminAccount', false) == false;
+      allow update: if request.resource.data.get('isAdmin', false) == false
+                    && request.resource.data.get('isAdminAccount', false) == false;
     }
 
     // ── Predictions ──────────────────────────────────────────────────────
-    // Anyone can read predictions (compare picks)
-    // Anyone can write their own prediction (PIN-auth, no Firebase Auth)
     match /predictions/{predId} {
       allow read: if true;
       allow write: if true;
     }
 
-    // ── Matches (results) ────────────────────────────────────────────────
-    // Read-only for clients — written only by GitHub Actions (service account)
+    // ── Matches — readable by all, writable only with valid result fields ──
     match /matches/{matchId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if request.resource.data.keys().hasOnly(['resultA', 'resultB', 'status']);
     }
 
-    // ── Config (lastSync etc.) ───────────────────────────────────────────
-    // Read-only for clients
+    // ── Config — read-only for clients ───────────────────────────────────
     match /config/{docId} {
       allow read: if true;
       allow write: if false;
