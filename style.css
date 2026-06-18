@@ -1665,12 +1665,14 @@ body { padding-bottom: calc(126px + env(safe-area-inset-bottom)); }
   .user-meta { font-size: 0.78rem; }
   .view-title { font-size: 1.4rem; }
 
-  /* ── Leaderboard: 8 columns on mobile ── */
-  .lb-table { width: 100%; min-width: unset; }
-  .lb-th-rank   { width: 28px; }
-  .lb-th-player { width: 90px; max-width: 90px; }
-  .lb-th-num    { width: 36px; font-size: 0.7rem; padding: 0.6rem 0.15rem; }
-  .lb-th-pts    { width: 36px; font-size: 0.7rem; padding: 0.6rem 0.15rem; }
+  /* ── Leaderboard: 8 columns on mobile — fixed layout so Pts stays on screen ── */
+  .lb-table     { width: 100%; min-width: unset; table-layout: fixed; }
+  .lb-th-rank   { width: 22px; }
+  .lb-th-player { width: auto; }                  /* takes remaining space */
+  .lb-th-compare{ width: 22px; font-size: 0.65rem; padding: 0.6rem 0.1rem; }
+  .lb-th-num    { width: 26px; font-size: 0.65rem; padding: 0.6rem 0.1rem; }
+  .lb-th-pts    { width: 30px; font-size: 0.65rem; padding: 0.6rem 0.1rem; }
+  .lb-compare-label { display: none; }            /* hide " Compare" text on mobile */
   .lb-td-rank   { padding: 0.5rem 0.1rem 0.5rem 0.25rem; }
   .lb-td-player { padding: 0.5rem 0.25rem; }
   .lb-player-wrap { gap: 0.25rem; }
@@ -1726,7 +1728,7 @@ body.admin-mode #bottom-nav #my-picks-btn {
 }
 
 /* ── Leaderboard compare column ───────────────────── */
-.lb-th-compare { width: 2.5rem; text-align: center; }
+.lb-th-compare { width: 2rem; text-align: center; white-space: nowrap; }
 .lb-td-compare { text-align: center; }
 .lb-compare-btn {
   background: none;

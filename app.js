@@ -983,7 +983,7 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
         <tr>
           <th class="lb-th-rank">#</th>
           <th class="lb-th-player">Player</th>
-          <th class="lb-th-compare" title="Compare predictions">⚡ Compare</th>
+          <th class="lb-th-compare" title="Compare predictions">⚡<span class="lb-compare-label"> Compare</span></th>
           <th class="lb-th-num">MF</th>
           <th class="lb-th-num">MP</th>
           <th class="lb-th-num">🎯</th>
@@ -993,7 +993,7 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
       </thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="lb-legend">MF = Matches Finished &nbsp;·&nbsp; MP = Matches Played &nbsp;·&nbsp; 🎯 = Exact Score (13 pts) &nbsp;·&nbsp; ✅ = Correct Result (10 pts) &nbsp;·&nbsp; ⚡ = Compare predictions</p>`;
+    <p class="lb-legend">⚡ = Compare predictions &nbsp;·&nbsp; MF = Matches Finished &nbsp;·&nbsp; MP = Matches Played &nbsp;·&nbsp; 🎯 = Exact Score (13 pts) &nbsp;·&nbsp; ✅ = Correct Result (10 pts)</p>`;
 
   document.getElementById('leaderboard-updated').textContent =
     `Updated ${new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}`;
