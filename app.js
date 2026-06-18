@@ -1428,12 +1428,8 @@ async function initApp() {
   document.getElementById('admin-nav-btn').style.display = session.isAdmin ? 'flex' : 'none';
   document.getElementById('nav-user-name').textContent = session.nickname;
 
-  // Admin: hide non-admin tabs, show only Table + Admin
-  const adminOnlyHide = ['[data-view="view-home"]', '[data-view="view-my-preds"]', '#my-picks-btn'];
-  adminOnlyHide.forEach(sel => {
-    const el = document.querySelector(`#bottom-nav ${sel}`);
-    if (el) el.style.display = session.isAdmin ? 'none' : '';
-  });
+  // Admin: toggle body class to hide non-admin tabs via CSS
+  document.body.classList.toggle('admin-mode', session.isAdmin);
 
   // Topbar avatar — fetch user doc for photoURL
   try {

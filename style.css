@@ -1716,3 +1716,10 @@ body { padding-bottom: calc(126px + env(safe-area-inset-bottom)); }
 
 /* Toast above bottom nav (desktop) */
 #toast-container { bottom: calc(90px + env(safe-area-inset-bottom)); }
+
+/* ── Admin mode: hide non-admin tabs ──────────────── */
+body.admin-mode #bottom-nav [data-view="view-home"],
+body.admin-mode #bottom-nav [data-view="view-my-preds"],
+body.admin-mode #bottom-nav #my-picks-btn {
+  display: none !important;
+}
