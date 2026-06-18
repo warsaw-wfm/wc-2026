@@ -1728,7 +1728,7 @@ body.admin-mode #bottom-nav #my-picks-btn {
 }
 
 /* ── Leaderboard compare column ───────────────────── */
-.lb-th-compare { width: 2rem; text-align: center; white-space: nowrap; }
+.lb-th-compare { width: 2rem; text-align: center; white-space: nowrap; font-size: 0.7rem; }
 .lb-td-compare { text-align: center; }
 .lb-compare-btn {
   background: none;
