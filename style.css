@@ -867,11 +867,11 @@ body { padding-bottom: calc(126px + env(safe-area-inset-bottom)); }
   table-layout: auto;
 }
 
-/* ── Column widths — 7 columns: # | Player | Finished | Played | Exact | Result | Pts */
-.lb-th-rank   { width: 52px; text-align: center; }
-.lb-th-player { text-align: left; }          /* takes remaining space */
-.lb-th-num    { width: 84px; text-align: center; white-space: nowrap; }
-.lb-th-pts    { width: 60px; text-align: center; white-space: nowrap; }
+/* ── Column widths ─────────────────────────────────────────────────── */
+.lb-th-rank   { width: 44px; text-align: center; }
+.lb-th-player { width: 130px; max-width: 130px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-th-num    { width: 52px; text-align: center; white-space: nowrap; }
+.lb-th-pts    { width: 56px; text-align: center; white-space: nowrap; }
 
 .lb-table th {
   background: var(--card2);
@@ -1665,11 +1665,12 @@ body { padding-bottom: calc(126px + env(safe-area-inset-bottom)); }
   .user-meta { font-size: 0.78rem; }
   .view-title { font-size: 1.4rem; }
 
-  /* ── Leaderboard: 7 columns on mobile ── */
+  /* ── Leaderboard: 8 columns on mobile ── */
   .lb-table { width: 100%; min-width: unset; }
-  .lb-th-rank { width: 34px; }
-  .lb-th-num  { width: 64px; font-size: 0.62rem; padding: 0.6rem 0.2rem; }
-  .lb-th-pts  { width: 44px; font-size: 0.62rem; padding: 0.6rem 0.2rem; }
+  .lb-th-rank   { width: 28px; }
+  .lb-th-player { width: 90px; max-width: 90px; }
+  .lb-th-num    { width: 36px; font-size: 0.7rem; padding: 0.6rem 0.15rem; }
+  .lb-th-pts    { width: 36px; font-size: 0.7rem; padding: 0.6rem 0.15rem; }
   .lb-td-rank   { padding: 0.5rem 0.1rem 0.5rem 0.25rem; }
   .lb-td-player { padding: 0.5rem 0.25rem; }
   .lb-player-wrap { gap: 0.25rem; }
@@ -1738,3 +1739,13 @@ body.admin-mode #bottom-nav #my-picks-btn {
   line-height: 1;
 }
 .lb-compare-btn:hover { background: rgba(240,180,41,0.15); }
+
+/* ── Leaderboard legend ───────────────────────────── */
+.lb-legend {
+  margin: 0.75rem 0 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+}

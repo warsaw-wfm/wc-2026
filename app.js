@@ -973,15 +973,16 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
           <th class="lb-th-rank">#</th>
           <th class="lb-th-player">Player</th>
           <th class="lb-th-compare">⚡</th>
-          <th class="lb-th-num">Matches Finished</th>
-          <th class="lb-th-num">Matches Played</th>
-          <th class="lb-th-num">Exact Score</th>
-          <th class="lb-th-num">Correct Result</th>
-          <th class="lb-th-pts">Points</th>
+          <th class="lb-th-num">MF</th>
+          <th class="lb-th-num">MP</th>
+          <th class="lb-th-num">🎯</th>
+          <th class="lb-th-num">✅</th>
+          <th class="lb-th-pts">Pts</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
-    </table>`;
+    </table>
+    <p class="lb-legend">MF = Matches Finished &nbsp;·&nbsp; MP = Matches Played &nbsp;·&nbsp; 🎯 = Exact Score (13 pts) &nbsp;·&nbsp; ✅ = Correct Result (10 pts)</p>`;
 
   document.getElementById('leaderboard-updated').textContent =
     `Updated ${new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}`;
