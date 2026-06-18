@@ -6,4 +6,3 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "887551665443",
   appId:             "1:887551665443:web:2b8b0499badee0cc639896"
 };
-const FOOTBALL_API_KEY = 'YOUR_FOOTBALL_API_KEY';

@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Firebase service account (never commit)
+*serviceAccount*.json
+service-account*.json
+firebase-adminsdk*.json
+
+# Environment files
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
