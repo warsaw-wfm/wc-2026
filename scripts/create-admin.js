@@ -4,10 +4,7 @@
  * Creates (or resets) the admin account in Firestore.
  *
  * Usage:
- *   GOOGLE_APPLICATION_CREDENTIALS=path/to/serviceAccount.json node create-admin.js
- *   GOOGLE_APPLICATION_CREDENTIALS=path/to/serviceAccount.json node create-admin.js "NewPassword"
- *
- * If no password argument is given, defaults to "Admin2026".
+ *   GOOGLE_APPLICATION_CREDENTIALS=path/to/serviceAccount.json node create-admin.js "YourPassword"
  */
 
 'use strict';
@@ -16,7 +13,11 @@ const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore }        = require('firebase-admin/firestore');
 const crypto                  = require('crypto');
 
-const PASSWORD = process.argv[2] || 'Admin2026';
+const PASSWORD = process.argv[2];
+if (!PASSWORD) {
+  console.error('❌  Please provide a password: node create-admin.js "YourPassword"');
+  process.exit(1);
+}
 
 async function hashPin(pin) {
   return crypto.createHash('sha256').update(pin).digest('hex');
