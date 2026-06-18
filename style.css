@@ -56,8 +56,8 @@ body { padding-bottom: calc(126px + env(safe-area-inset-bottom)); }
   justify-content: center;
   padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
   gap: 2rem;
-  background:
-    radial-gradient(ellipse at 50% 30%, #1e3a5f 0%, var(--pitch) 65%);
+  background: url("2026-wc.jpg") center center / cover no-repeat;
+  background-attachment: fixed;
 }
 #view-login.active { display: flex; }
 
@@ -70,6 +70,14 @@ body { padding-bottom: calc(126px + env(safe-area-inset-bottom)); }
   justify-content: center;
   padding: 0;
 }
+#view-login::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 12, 25, 0.55);
+  z-index: 0;
+}
+#view-login > * { position: relative; z-index: 1; }
 .login-trophy {
   font-size: 7rem;
   line-height: 1;
