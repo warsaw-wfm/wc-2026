@@ -3,13 +3,15 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── Users ────────────────────────────────────────────────────────────
-    // Anyone can read (leaderboard). Anyone can write EXCEPT escalating to admin.
+    // Anyone can read (leaderboard).
+    // Create: can't self-assign isAdmin/isAdminAccount.
+    // Update: can't change the isAdmin/isAdminAccount fields (no privilege escalation).
     match /users/{userId} {
       allow read: if true;
       allow create: if request.resource.data.get('isAdmin', false) == false
                     && request.resource.data.get('isAdminAccount', false) == false;
-      allow update: if request.resource.data.get('isAdmin', false) == false
-                    && request.resource.data.get('isAdminAccount', false) == false;
+      allow update: if request.resource.data.get('isAdmin', false) == resource.data.get('isAdmin', false)
+                    && request.resource.data.get('isAdminAccount', false) == resource.data.get('isAdminAccount', false);
     }
 
     // ── Predictions ──────────────────────────────────────────────────────
