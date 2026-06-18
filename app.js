@@ -275,9 +275,13 @@ async function handleLogin() {
       if (await hashPin(pin) !== user.pinHash) throw new Error('wrong pin');
     }
     saveSession(userId, user.nickname, user.isAdmin || false);
+    localStorage.removeItem('pwa-dismissed');
     document.getElementById('login-pin').value = '';
     document.getElementById('login-pin-confirm').value = '';
     await initApp();
+    setTimeout(() => {
+      if (_deferredInstallPrompt) document.getElementById('install-banner').style.display = 'flex';
+    }, 1500);
   } catch {
     errEl.textContent = 'Wrong PIN — try again.'; errEl.classList.add('show');
     document.getElementById('login-pin').value = '';
@@ -355,8 +359,12 @@ async function handleRegister() {
       photoURL, createdAt: serverTimestamp()
     });
     saveSession(ref.id, nickname, false);
+    localStorage.removeItem('pwa-dismissed');
     showToast(`Welcome, ${nickname}! 🎉`, 'success');
     await initApp();
+    setTimeout(() => {
+      if (_deferredInstallPrompt) document.getElementById('install-banner').style.display = 'flex';
+    }, 1500);
   } catch (e) {
     errEl.textContent = 'Error — try again.'; errEl.classList.add('show'); console.error('Register error:', e);
   }
