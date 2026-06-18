@@ -331,7 +331,7 @@ async function handleRegister() {
   errEl.classList.remove('show');
   if (!raw) { errEl.textContent = 'Enter a nickname.'; errEl.classList.add('show'); return; }
   // Sentence case
-  const nickname   = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+  const nickname   = raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   const normalised = nickname.toLowerCase().replace(/\s+/g, '');
   if (!/^\d{4}$/.test(pin)) { errEl.textContent = 'PIN must be exactly 4 digits.'; errEl.classList.add('show'); return; }
   if (pin !== confirm) { errEl.textContent = 'PINs do not match.'; errEl.classList.add('show'); return; }
@@ -1182,7 +1182,7 @@ async function addAdminUser() {
   const raw = document.getElementById('new-nickname').value.trim();
   if (!raw) { showToast('Nickname required', 'error'); return; }
   // Sentence case: capitalise first letter, lowercase the rest
-  const nickname   = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+  const nickname   = raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   const normalised = nickname.toLowerCase().replace(/\s+/g, '');
   try {
     // Duplicate check — case-insensitive, ignores spaces, skips disabled
