@@ -1665,24 +1665,26 @@ body { padding-bottom: calc(126px + env(safe-area-inset-bottom)); }
   .user-meta { font-size: 0.78rem; }
   .view-title { font-size: 1.4rem; }
 
-  /* ── Leaderboard: 8 columns on mobile — fixed layout so Pts stays on screen ── */
+  /* ── Leaderboard: 8 columns on mobile ─────────────────────────────
+     All columns have explicit px widths so table-layout:fixed scales
+     them proportionally to fill 100% — gives even breathing room.
+     Base total ≈ 256px → scales up ~1.35× on a 360px screen.       */
   .lb-table     { width: 100%; min-width: unset; table-layout: fixed; }
-  .lb-th-rank   { width: 22px; }
-  .lb-th-player { width: auto; }                  /* takes remaining space */
-  .lb-th-compare{ width: 22px; font-size: 0.65rem; padding: 0.6rem 0.1rem; }
-  .lb-th-num    { width: 26px; font-size: 0.65rem; padding: 0.6rem 0.1rem; }
-  .lb-th-pts    { width: 30px; font-size: 0.65rem; padding: 0.6rem 0.1rem; }
-  .lb-compare-label { display: none; }            /* hide " Compare" text on mobile */
-  .lb-td-rank   { padding: 0.5rem 0.1rem 0.5rem 0.25rem; }
-  .lb-td-player { padding: 0.5rem 0.25rem; }
-  .lb-player-wrap { gap: 0.25rem; }
-  .lb-td-num    { font-size: 0.95rem; padding: 0.5rem 0.15rem; }
+  .lb-th-rank   { width: 20px; }
+  .lb-th-player { width: 68px; max-width: 68px; }
+  .lb-th-compare{ width: 24px; font-size: 0.68rem; padding: 0.65rem 0.2rem; }
+  .lb-th-num    { width: 30px; font-size: 0.68rem; padding: 0.65rem 0.2rem; }
+  .lb-th-pts    { width: 34px; font-size: 0.68rem; padding: 0.65rem 0.2rem; }
+  .lb-compare-label { display: none; }
+  .lb-td-rank   { padding: 0.6rem 0.15rem; }
+  .lb-td-player { padding: 0.6rem 0.3rem 0.6rem 0.2rem; max-width: 68px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-player-wrap { gap: 0.2rem; overflow: hidden; }
+  .lb-td-num    { font-size: 0.9rem; padding: 0.6rem 0.2rem; }
   .lb-td-total  { font-size: 0.85rem; }
-  .lb-td-pts    { padding: 0.5rem 0.2rem; }
-  .lb-pts       { font-size: 1.5rem; }
-  .lb-rank-num  { font-size: 1.2rem; }
-  .lb-name-text { font-size: 0.8rem; }
-  .lb-rank-move { font-size: 0.5rem; }
+  .lb-td-pts    { padding: 0.6rem 0.2rem; }
+  .lb-pts       { font-size: 1.4rem; }
+  .lb-rank-num  { font-size: 1.1rem; }
+  .lb-name-text { font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
   .lb-rank-move { font-size: 0.55rem; }
   .lb-drawer { padding: 0.5rem 0.75rem; gap: 0.5rem; }
   .lb-drawer-pick { font-size: 0.82rem; }
