@@ -33,6 +33,7 @@ const STATE = {
   matches: [],
   predictions: {},
   users: [],
+  allPredictions: null,   // cached full predictions scan
   countdownTimers: [],
   currentPredictMatch: null,
 };
@@ -216,15 +217,27 @@ async function fetchUsers() {
   STATE.users.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
 }
 
+// Fetch ALL predictions once and cache — reused by computeUserAccuracy + buildFilteredLeaderboard
+async function fetchAllPredictions() {
+  if (STATE.allPredictions) return STATE.allPredictions;
+  const snap = await getDocs(collection(STATE.db, 'predictions'));
+  STATE.allPredictions = [];
+  snap.forEach(d => STATE.allPredictions.push(d.data()));
+  return STATE.allPredictions;
+}
+
 // ═══════════════════════════════════════════════════════
 // VIEW 1 — LOGIN
 // ═══════════════════════════════════════════════════════
 async function initLoginView() {
+  const sel = document.getElementById('login-user-select');
+  sel.innerHTML = '<option value="">Loading players…</option>';
+  sel.disabled = true;
   const snap = await getDocs(collection(STATE.db, 'users'));
-  const sel  = document.getElementById('login-user-select');
   // Build a map of userId → pinHash for quick lookup on selection
   const userPinMap = {};
   sel.innerHTML = '<option value="">— Who are you? —</option>';
+  sel.disabled = false;
   snap.forEach(d => {
     if (d.data().disabled) return;
     if (d.data().isAdminAccount) return;
@@ -757,10 +770,9 @@ function renderDeadlineBanner() {
 // ═══════════════════════════════════════════════════════
 
 async function computeUserAccuracy() {
-  const snap = await getDocs(collection(STATE.db, 'predictions'));
+  const preds = await fetchAllPredictions();
   const allPreds = {}, finished = {}, scored = {}, exactMap = {}, winnerMap = {};
-  snap.forEach(d => {
-    const p = d.data();
+  preds.forEach(p => {
     allPreds[p.userId] = (allPreds[p.userId] || 0) + 1;
     if (p.pointsAwarded != null) {
       finished[p.userId] = (finished[p.userId] || 0) + 1;
@@ -844,7 +856,8 @@ async function openCompareModal(userId, nickname) {
 async function initLeaderboard() {
   document.getElementById('leaderboard-body').innerHTML =
     '<div class="loading-center"><div class="spinner"></div></div>';
-  await fetchUsers();
+  // Fetch users + all predictions in parallel (single round trip each)
+  await Promise.all([fetchUsers(), fetchAllPredictions()]);
   await computeUserAccuracy();
   renderLeaderboard('overall');
 }
@@ -882,10 +895,9 @@ async function renderLeaderboard(filter) {
 }
 
 async function buildFilteredLeaderboard(matchIds, filter) {
-  const snap = await getDocs(collection(STATE.db, 'predictions'));
+  const preds = await fetchAllPredictions();
   const pts = {}, exact = {}, winner = {}, predCount = {};
-  snap.forEach(d => {
-    const p = d.data();
+  preds.forEach(p => {
     if (!matchIds.has(p.matchId)) return;
     predCount[p.userId] = (predCount[p.userId] || 0) + 1;
     pts[p.userId]    = (pts[p.userId]    || 0) + (p.pointsAwarded || 0);
@@ -1250,6 +1262,7 @@ async function saveMatchResult(matchId, autoRA, autoRB) {
   const rB = autoRB !== undefined ? autoRB : parseInt(document.getElementById(`res-b-${matchId}`)?.value, 10);
   if (isNaN(rA) || isNaN(rB)) { showToast('Enter valid scores', 'error'); return; }
   try {
+    STATE.allPredictions = null; // invalidate cache so leaderboard re-fetches
     await setDoc(doc(STATE.db, 'matches', matchId), { resultA: rA, resultB: rB, status: 'completed' }, { merge: true });
     const pSnap = await getDocs(query(collection(STATE.db, 'predictions'), where('matchId', '==', matchId)));
     const batch = writeBatch(STATE.db);
@@ -1433,40 +1446,34 @@ async function initApp() {
   // Admin: toggle body class to hide non-admin tabs via CSS
   document.body.classList.toggle('admin-mode', session.isAdmin);
 
-  // Topbar avatar — fetch user doc for photoURL
+  // Topbar avatar — fetch user doc once; reuse for champion modal
+  let uData = {};
   try {
     const uSnap = await getDoc(doc(STATE.db, 'users', session.userId));
-    const uData = uSnap.exists() ? uSnap.data() : {};
-    document.getElementById('topbar-avatar').innerHTML =
-      getAvatarHTML({ nickname: session.nickname, photoURL: uData.photoURL || '' }, 32);
-  } catch {
-    document.getElementById('topbar-avatar').innerHTML =
-      getAvatarHTML({ nickname: session.nickname, photoURL: '' }, 32);
-  }
+    uData = uSnap.exists() ? uSnap.data() : {};
+  } catch {}
+  document.getElementById('topbar-avatar').innerHTML =
+    getAvatarHTML({ nickname: session.nickname, photoURL: uData.photoURL || '' }, 32);
 
   // Tapping topbar avatar opens Profile modal
   document.getElementById('topbar-avatar-wrap').onclick = () => openProfileModal();
-  await initHomeView();
-  showView('view-home');
+
   populateLeaderboardFilter();
 
-  // Show champion/golden boot picker if not set yet (not for admin)
-  if (!session.isAdmin) {
-    try {
-      const uSnap = await getDoc(doc(STATE.db, 'users', session.userId));
-      if (uSnap.exists()) {
-        const data = uSnap.data();
-        if (!data.championPick || !data.goldenBootPick) {
-          setTimeout(() => openChampionModal(data), 900);
-        }
-      }
-    } catch {}
-  }
-
-  // Admin lands on leaderboard, not home
+  // Admin: go straight to leaderboard (skip home init)
   if (session.isAdmin) {
     showView('view-leaderboard');
+    await initLeaderboard();
     return;
+  }
+
+  // Regular user: load home
+  await initHomeView();
+  showView('view-home');
+
+  // Show champion/golden boot picker if not set yet
+  if (!uData.championPick || !uData.goldenBootPick) {
+    setTimeout(() => openChampionModal(uData), 900);
   }
 }
 
