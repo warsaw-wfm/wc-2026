@@ -1428,6 +1428,13 @@ async function initApp() {
   document.getElementById('admin-nav-btn').style.display = session.isAdmin ? 'flex' : 'none';
   document.getElementById('nav-user-name').textContent = session.nickname;
 
+  // Admin: hide non-admin tabs, show only Table + Admin
+  const adminOnlyHide = ['[data-view="view-home"]', '[data-view="view-my-preds"]', '#my-picks-btn'];
+  adminOnlyHide.forEach(sel => {
+    const el = document.querySelector(`#bottom-nav ${sel}`);
+    if (el) el.style.display = session.isAdmin ? 'none' : '';
+  });
+
   // Topbar avatar — fetch user doc for photoURL
   try {
     const uSnap = await getDoc(doc(STATE.db, 'users', session.userId));
@@ -1445,16 +1452,24 @@ async function initApp() {
   showView('view-home');
   populateLeaderboardFilter();
 
-  // Show champion/golden boot picker if not set yet
-  try {
-    const uSnap = await getDoc(doc(STATE.db, 'users', session.userId));
-    if (uSnap.exists()) {
-      const data = uSnap.data();
-      if (!data.championPick || !data.goldenBootPick) {
-        setTimeout(() => openChampionModal(data), 900);
+  // Show champion/golden boot picker if not set yet (not for admin)
+  if (!session.isAdmin) {
+    try {
+      const uSnap = await getDoc(doc(STATE.db, 'users', session.userId));
+      if (uSnap.exists()) {
+        const data = uSnap.data();
+        if (!data.championPick || !data.goldenBootPick) {
+          setTimeout(() => openChampionModal(data), 900);
+        }
       }
-    }
-  } catch {}
+    } catch {}
+  }
+
+  // Admin lands on leaderboard, not home
+  if (session.isAdmin) {
+    showView('view-leaderboard');
+    return;
+  }
 }
 
 // ═══════════════════════════════════════════════════════
