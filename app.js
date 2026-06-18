@@ -952,7 +952,6 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
       <td class="lb-td-rank"><div class="lb-rank-num">${rankNum}</div>${moveHTML}</td>
       <td class="lb-td-player">
         <div class="lb-player-wrap">
-          ${getAvatarHTML(u, 32)}
           <span class="lb-name-text">${u.nickname}${isMe ? '<span class="me-tag">YOU</span>' : ''}</span>
         </div>
       </td>
@@ -984,7 +983,7 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
         <tr>
           <th class="lb-th-rank">#</th>
           <th class="lb-th-player">Player</th>
-          <th class="lb-th-compare">⚡</th>
+          <th class="lb-th-compare" title="Compare predictions">⚡ Compare</th>
           <th class="lb-th-num">MF</th>
           <th class="lb-th-num">MP</th>
           <th class="lb-th-num">🎯</th>
@@ -994,7 +993,7 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
       </thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="lb-legend">MF = Matches Finished &nbsp;·&nbsp; MP = Matches Played &nbsp;·&nbsp; 🎯 = Exact Score (13 pts) &nbsp;·&nbsp; ✅ = Correct Result (10 pts)</p>`;
+    <p class="lb-legend">MF = Matches Finished &nbsp;·&nbsp; MP = Matches Played &nbsp;·&nbsp; 🎯 = Exact Score (13 pts) &nbsp;·&nbsp; ✅ = Correct Result (10 pts) &nbsp;·&nbsp; ⚡ = Compare predictions</p>`;
 
   document.getElementById('leaderboard-updated').textContent =
     `Updated ${new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}`;
