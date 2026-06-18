@@ -1208,7 +1208,7 @@ function renderAdminMatches() {
 
   const fetchBtn = `
     <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
-      <a href="https://github.com/kpimdad/Warsaw-WFM/actions/workflows/fetch-results.yml"
+      <a href="https://github.com/warsaw-wfm/wc-2026/actions/workflows/fetch-results.yml"
          target="_blank" class="btn btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:.4rem">
         🔄 Run Fetch Now
       </a>
