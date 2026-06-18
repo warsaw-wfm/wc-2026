@@ -1731,7 +1731,7 @@ body.admin-mode #bottom-nav #my-picks-btn {
 
 /* ── Leaderboard compare column ───────────────────── */
 .lb-th-compare { width: 2rem; text-align: center; white-space: nowrap; font-size: 0.55rem; padding: 0.75rem 0.6rem; }
-.lb-td-compare { text-align: center; padding: 0.35rem 0.4rem; }
+.lb-td-compare { text-align: center; padding: 0.35rem 0.4rem; vertical-align: middle; }
 .lb-compare-btn {
   background: none;
   border: 1px solid var(--gold);
@@ -1741,6 +1741,8 @@ body.admin-mode #bottom-nav #my-picks-btn {
   font-size: 0.8rem;
   cursor: pointer;
   line-height: 1;
+  display: inline-block;
+  margin: 0 auto;
 }
 .lb-compare-btn:hover { background: rgba(240,180,41,0.15); }
 
