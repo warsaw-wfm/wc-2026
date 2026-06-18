@@ -949,20 +949,16 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
       <td class="lb-td-num lb-td-exact">${exact}</td>
       <td class="lb-td-num lb-td-result">${winner}</td>
       <td class="lb-td-pts"><span class="lb-pts">${pts}</span></td>
+      <td class="lb-td-compare">${!isMe ? `<button class="lb-compare-btn" data-uid="${u.id}" data-nickname="${u.nickname}">⇄</button>` : ''}</td>
     </tr>`;
 
-    // Expandable drawer — shows champion/golden boot picks
-    const compareBtn = !isMe
-      ? `<button class="lb-drawer-compare" data-uid="${u.id}" data-nickname="${u.nickname}">Compare ↗</button>`
-      : '';
     const drawerRow = `<tr class="lb-tr-drawer" data-uid="${u.id}">
-      <td colspan="7">
+      <td colspan="8">
         <div class="lb-drawer">
           <div class="lb-drawer-picks">
             <span class="lb-drawer-pick"><span class="lb-drawer-lbl">🏆 Winner</span>${champ}</span>
             <span class="lb-drawer-pick"><span class="lb-drawer-lbl">⚽ Top Scorer</span>${boot}</span>
           </div>
-          ${compareBtn}
         </div>
       </td>
     </tr>`;
@@ -981,6 +977,7 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
           <th class="lb-th-num">Exact Score</th>
           <th class="lb-th-num">Correct Result</th>
           <th class="lb-th-pts">Points</th>
+          <th class="lb-th-compare">⚡</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -1008,8 +1005,8 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
     });
   });
 
-  // Compare button inside drawer
-  document.querySelectorAll('.lb-drawer-compare').forEach(btn => {
+  // Compare button in row
+  document.querySelectorAll('.lb-compare-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       openCompareModal(btn.dataset.uid, btn.dataset.nickname);

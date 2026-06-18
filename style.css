@@ -1723,3 +1723,18 @@ body.admin-mode #bottom-nav [data-view="view-my-preds"],
 body.admin-mode #bottom-nav #my-picks-btn {
   display: none !important;
 }
+
+/* ── Leaderboard compare column ───────────────────── */
+.lb-th-compare { width: 2.5rem; text-align: center; }
+.lb-td-compare { text-align: center; }
+.lb-compare-btn {
+  background: none;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  border-radius: 6px;
+  padding: 0.2rem 0.45rem;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.lb-compare-btn:hover { background: rgba(240,180,41,0.15); }
