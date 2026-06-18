@@ -1670,7 +1670,9 @@ body { padding-bottom: calc(126px + env(safe-area-inset-bottom)); }
   .lb-table     { width: 100%; min-width: unset; table-layout: fixed; }
   .lb-th-rank   { width: 30px; }
   .lb-th-player { width: 95px; max-width: 95px; }
-  .lb-th-compare{ width: 30px; font-size: 0.7rem; padding: 0.35rem 0.2rem; }
+  .lb-th-compare{ width: 30px; font-size: 0.5rem; padding: 0.35rem 0.3rem; }
+  .lb-td-compare { padding: 0.35rem 0.3rem; }
+  .lb-compare-btn { font-size: 0.7rem; padding: 0.1rem 0.25rem; }
   .lb-th-num    { width: 44px; font-size: 0.7rem; padding: 0.35rem 0.2rem; }
   .lb-th-pts    { width: 44px; font-size: 0.7rem; padding: 0.35rem 0.2rem; }
   .lb-compare-label { display: none; }
@@ -1728,15 +1730,15 @@ body.admin-mode #bottom-nav #my-picks-btn {
 }
 
 /* ── Leaderboard compare column ───────────────────── */
-.lb-th-compare { width: 2rem; text-align: center; white-space: nowrap; font-size: 0.7rem; }
-.lb-td-compare { text-align: center; }
+.lb-th-compare { width: 2rem; text-align: center; white-space: nowrap; font-size: 0.55rem; padding: 0.75rem 0.6rem; }
+.lb-td-compare { text-align: center; padding: 0.35rem 0.4rem; }
 .lb-compare-btn {
   background: none;
   border: 1px solid var(--gold);
   color: var(--gold);
   border-radius: 6px;
-  padding: 0.2rem 0.45rem;
-  font-size: 1rem;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.8rem;
   cursor: pointer;
   line-height: 1;
 }
