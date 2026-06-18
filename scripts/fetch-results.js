@@ -102,18 +102,45 @@ async function main() {
 
   let updated = 0;
 
+  // Known team name variations between our index and football-data.org
+  const TEAM_ALIASES = {
+    'Korea Republic': 'South Korea',
+    'Czech Republic': 'Czechia',
+    'United States': 'USA',
+    'IR Iran': 'Iran',
+    'Côte d\'Ivoire': 'Ivory Coast',
+    'Türkiye': 'Turkey',
+  };
+  function normalise(name) {
+    return (TEAM_ALIASES[name] || name).toLowerCase().replace(/[^a-z]/g, '');
+  }
+
   for (const apiMatch of finished) {
     const rA = apiMatch.score?.fullTime?.home;
     const rB = apiMatch.score?.fullTime?.away;
     if (rA == null || rB == null) continue;
 
-    // Match by kickoff time (±5 min tolerance)
-    const apiTime = new Date(apiMatch.utcDate).getTime();
-    const ourMatch = pending.find(
-      m => Math.abs(new Date(m.kickoffUTC).getTime() - apiTime) < 5 * 60 * 1000
+    const apiTime  = new Date(apiMatch.utcDate).getTime();
+    const apiHomeN = normalise(apiMatch.homeTeam?.name || '');
+    const apiAwayN = normalise(apiMatch.awayTeam?.name || '');
+
+    // Primary: match by kickoff time (±15 min tolerance)
+    let ourMatch = pending.find(
+      m => Math.abs(new Date(m.kickoffUTC).getTime() - apiTime) < 15 * 60 * 1000
     );
 
-    if (!ourMatch) continue; // not in our pending list, skip
+    // Fallback: match by team names if time didn't match
+    if (!ourMatch) {
+      ourMatch = pending.find(m =>
+        normalise(m.teamA) === apiHomeN && normalise(m.teamB) === apiAwayN
+      );
+      if (ourMatch) console.log(`  ⚠️  Time mismatch for ${apiMatch.homeTeam?.name} vs ${apiMatch.awayTeam?.name} — matched by team names`);
+    }
+
+    if (!ourMatch) {
+      console.log(`  ⏭  No match for API fixture: ${apiMatch.homeTeam?.name} vs ${apiMatch.awayTeam?.name} @ ${apiMatch.utcDate}`);
+      continue;
+    }
 
     // Write result to Firestore
     const matchRef = db.collection('matches').doc(ourMatch.matchId);

@@ -18,10 +18,10 @@ service cloud.firestore {
       allow write: if true;
     }
 
-    // ── Matches — readable by all, writable only with valid result fields ──
+    // ── Matches — readable by all, writable by any client ──────────────────
     match /matches/{matchId} {
       allow read: if true;
-      allow write: if request.resource.data.keys().hasOnly(['resultA', 'resultB', 'status']);
+      allow write: if true;
     }
 
     // ── Config — read-only for clients ───────────────────────────────────
