@@ -208,13 +208,28 @@ async function fetchMyPredictions() {
   snap.forEach(d => { const p = d.data(); STATE.predictions[p.matchId] = p; });
 }
 
+// ── Leaderboard sort comparators ──────────────────────
+// Tiebreakers: pts → exact scores → correct results → fewer predictions played
+function cmpOverall(a, b) {
+  return (b.totalPoints    || 0) - (a.totalPoints    || 0)
+      || (b.computedExact  || 0) - (a.computedExact  || 0)
+      || (b.computedWinner || 0) - (a.computedWinner || 0)
+      || (a.predictionsSubmitted || 0) - (b.predictionsSubmitted || 0);
+}
+function cmpFiltered(a, b) {
+  return (b.filteredPoints    || 0) - (a.filteredPoints    || 0)
+      || (b.filteredExact     || 0) - (a.filteredExact     || 0)
+      || (b.filteredWinner    || 0) - (a.filteredWinner    || 0)
+      || (a.filteredPredCount || 0) - (b.filteredPredCount || 0);
+}
+
 async function fetchUsers() {
   const snap = await getDocs(collection(STATE.db, 'users'));
   STATE.users = [];
   snap.forEach(d => {
     if (!d.data().disabled && !d.data().isAdminAccount) STATE.users.push({ id: d.id, ...d.data() });
   });
-  STATE.users.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+  STATE.users.sort(cmpOverall);
 }
 
 // Fetch ALL predictions once and cache — reused by computeUserAccuracy + buildFilteredLeaderboard
@@ -912,7 +927,7 @@ async function buildFilteredLeaderboard(matchIds, filter) {
     ...u, filteredPoints: pts[u.id] || 0,
     filteredExact: exact[u.id] || 0, filteredWinner: winner[u.id] || 0,
     filteredPredCount: predCount[u.id] || 0,
-  })).sort((a, b) => b.filteredPoints - a.filteredPoints);
+  })).sort(cmpFiltered);
   renderLeaderboardTable(sorted, filter, totalCompleted);
 }
 
