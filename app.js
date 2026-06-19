@@ -1114,7 +1114,9 @@ let adminTab = 'users';
 
 async function initAdminPanel() {
   if (!STATE.session?.isAdmin) { showToast('Admin access only', 'error'); return; }
-  setAdminTab('users');
+  // Ensure matches are loaded (skipped during admin login flow)
+  if (!STATE.matches.length) await fetchMatches();
+  setAdminTab('matches');
 }
 
 function setAdminTab(tab) {
