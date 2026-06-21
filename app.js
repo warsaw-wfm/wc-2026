@@ -1084,14 +1084,26 @@ async function initMyPredictions() {
 
 function renderMyPredictions() {
   let totalPts = 0, exact = 0, winner = 0;
-  const groups = {};
+
+  // Split into finished (latest first) and upcoming (soonest first)
+  const finished = [], upcoming = [];
   STATE.matches.forEach(m => {
     const p = STATE.predictions[m.matchId];
     if (!p) return;
-    if (!groups[m.matchDay]) groups[m.matchDay] = [];
-    groups[m.matchDay].push({ m, p });
+    if (m.status === 'completed' && m.resultA != null) finished.push({ m, p });
+    else upcoming.push({ m, p });
     if (p.pointsAwarded === 13) { totalPts += 13; exact++; }
     else if (p.pointsAwarded === 10) { totalPts += 10; winner++; }
+  });
+  finished.sort((a, b) => new Date(b.m.kickoffUTC) - new Date(a.m.kickoffUTC));
+  upcoming.sort((a, b) => new Date(a.m.kickoffUTC) - new Date(b.m.kickoffUTC));
+
+  // Flatten into ordered groups (upcoming first, then finished)
+  const groups = {};
+  [...upcoming, ...finished].forEach(({ m, p }) => {
+    const key = m.status === 'completed' ? `✅ ${m.matchDay}` : m.matchDay;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push({ m, p });
   });
 
   const scored = Object.values(STATE.predictions).filter(p => p.pointsAwarded != null);
@@ -1279,8 +1291,26 @@ async function addAdminUser() {
 
 function renderAdminMatches() {
   const container = document.getElementById('admin-match-list');
-  const byDay = {};
-  STATE.matches.forEach(m => { if (!byDay[m.matchDay]) byDay[m.matchDay] = []; byDay[m.matchDay].push(m); });
+
+  // Upcoming: chronological. Finished: latest first.
+  const upcoming = STATE.matches
+    .filter(m => m.status !== 'completed')
+    .sort((a, b) => new Date(a.kickoffUTC) - new Date(b.kickoffUTC));
+  const finished = STATE.matches
+    .filter(m => m.status === 'completed')
+    .sort((a, b) => new Date(b.kickoffUTC) - new Date(a.kickoffUTC));
+
+  // Group each list by match day (preserving sorted order)
+  function groupByDay(list) {
+    const map = new Map();
+    list.forEach(m => {
+      if (!map.has(m.matchDay)) map.set(m.matchDay, []);
+      map.get(m.matchDay).push(m);
+    });
+    return map;
+  }
+  const upcomingGroups = groupByDay(upcoming);
+  const finishedGroups = groupByDay(finished);
 
   const fetchBtn = `
     <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
@@ -1291,7 +1321,10 @@ function renderAdminMatches() {
       <span style="font-size:0.78rem;color:var(--muted)">Auto-runs every hour via GitHub Actions · click to trigger manually</span>
     </div>`;
 
-  container.innerHTML = fetchBtn + Object.entries(byDay).map(([day, matches]) => `
+  function renderGroups(groupMap) {
+    let html = '';
+    groupMap.forEach((matches, day) => {
+      html += `
     <div class="admin-card" style="margin-bottom:1rem">
       <div class="admin-card-head">${day}</div>
       <div class="admin-card-body" style="padding:0">
@@ -1315,7 +1348,19 @@ function renderAdminMatches() {
           </div>`;
         }).join('')}
       </div>
-    </div>`).join('');
+    </div>`;
+    });
+    return html;
+  }
+
+  const upcomingSection = upcomingGroups.size
+    ? `<h3 style="margin:.5rem 0 .75rem;font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Upcoming</h3>${renderGroups(upcomingGroups)}`
+    : '';
+  const finishedSection = finishedGroups.size
+    ? `<h3 style="margin:1.25rem 0 .75rem;font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Finished</h3>${renderGroups(finishedGroups)}`
+    : '';
+
+  container.innerHTML = fetchBtn + upcomingSection + finishedSection;
 }
 
 // ── Save a single match result (manual or auto) ────────
