@@ -1131,12 +1131,11 @@ async function downloadLeaderboardCard() {
     ctx.font = 'bold 58px Arial, sans-serif';
     ctx.fillText('Warsaw WFM WC 2026', W / 2, 155);
 
-    // Date / filter sub-label
-    const dateStr  = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const subLabel = filter ? `${filter.replace(/^[^\w\u{1F300}-\u{1FAFF}]*/u, '')} · ${dateStr}` : dateStr;
+    // Date only — no group/filter label
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     ctx.fillStyle = '#888';
     ctx.font = '30px Arial, sans-serif';
-    ctx.fillText(subLabel, W / 2, 200);
+    ctx.fillText(dateStr, W / 2, 200);
 
     // ── Column headers ────────────────────────────────────
     const COL = { rank: 62, name: 125, exact: 726, winner: 838, pts: 1042 };
