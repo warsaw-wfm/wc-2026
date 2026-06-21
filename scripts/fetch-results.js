@@ -84,6 +84,21 @@ async function main() {
 
   console.log(`${pending.length} pending match(es) to check:`, pending.map(m => `${m.teamA} vs ${m.teamB}`).join(', '));
 
+  // ── Save current rank order BEFORE results change the standings ────────────
+  try {
+    const usersSnap = await db.collection('users').get();
+    const ranked = [];
+    usersSnap.forEach(d => { if (!d.data().disabled) ranked.push({ id: d.id, pts: d.data().totalPoints || 0 }); });
+    ranked.sort((a, b) => b.pts - a.pts);
+    const rankMap = {};
+    ranked.forEach((u, i) => { rankMap[u.id] = i + 1; });
+    await db.collection('config').doc('rankSnapshot').set({
+      ranks: rankMap,
+      savedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    console.log(`Rank snapshot saved: ${ranked.length} users`);
+  } catch (e) { console.warn('Could not save rank snapshot:', e.message); }
+
   // ── Step 3: Fetch only the date range covering pending matches from the API ───
   const dates     = pending.map(m => new Date(m.kickoffUTC));
   const dateFrom  = new Date(Math.min(...dates)).toISOString().slice(0, 10);

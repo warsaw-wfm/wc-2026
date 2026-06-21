@@ -26,7 +26,11 @@ service cloud.firestore {
       allow write: if true;
     }
 
-    // ── Config — read-only for clients ───────────────────────────────────
+    // ── Config — read-only for clients, except rankSnapshot ──────────────
+    match /config/rankSnapshot {
+      allow read: if true;
+      allow write: if true;   // admin writes pre-match rank order here
+    }
     match /config/{docId} {
       allow read: if true;
       allow write: if false;

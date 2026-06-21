@@ -35,21 +35,28 @@ const STATE = {
   users: [],
   allPredictions: null,      // cached full predictions scan
   leaderboardSnapshot: null, // last rendered {users, filter, totalCompleted}
+  prevRanks: {},             // rank snapshot from Firestore (persists across deploys)
   countdownTimers: [],
   currentPredictMatch: null,
 };
 
-// ── Rank movement helpers ──────────────────────────────
-function loadPrevRanks() {
-  try { return JSON.parse(localStorage.getItem('wwfm_prevRanks')) || {}; } catch { return {}; }
+// ── Rank movement — Firestore-backed, persists across deploys ──
+async function fetchPrevRanks() {
+  try {
+    const snap = await getDoc(doc(STATE.db, 'config', 'rankSnapshot'));
+    STATE.prevRanks = (snap.exists() && snap.data().ranks) ? snap.data().ranks : {};
+  } catch { STATE.prevRanks = {}; }
 }
-function saveRankSnapshot(rankedUsers) {
-  // Only save once per page load — prevents overwriting before arrows are shown
-  if (sessionStorage.getItem('wwfm_rankSaved')) return;
-  const snap = {};
-  rankedUsers.forEach((u, i) => { snap[u.id] = i + 1; });
-  localStorage.setItem('wwfm_prevRanks', JSON.stringify(snap));
-  sessionStorage.setItem('wwfm_rankSaved', '1');
+
+async function saveRankSnapshot() {
+  if (!STATE.users.length) return;
+  const ranks = {};
+  STATE.users.forEach((u, i) => { ranks[u.id] = i + 1; });
+  try {
+    await setDoc(doc(STATE.db, 'config', 'rankSnapshot'),
+      { ranks, savedAt: serverTimestamp() });
+    STATE.prevRanks = ranks;
+  } catch (e) { console.warn('saveRankSnapshot:', e); }
 }
 
 // ── Session ────────────────────────────────────────────
@@ -890,8 +897,8 @@ async function openCompareModal(userId, nickname) {
 async function initLeaderboard() {
   document.getElementById('leaderboard-body').innerHTML =
     '<div class="loading-center"><div class="spinner"></div></div>';
-  // Fetch users + all predictions in parallel (single round trip each)
-  await Promise.all([fetchUsers(), fetchAllPredictions()]);
+  // Fetch users, predictions, and rank snapshot in parallel
+  await Promise.all([fetchUsers(), fetchAllPredictions(), fetchPrevRanks()]);
   await computeUserAccuracy();
   renderLeaderboard('overall');
 }
@@ -951,10 +958,10 @@ async function buildFilteredLeaderboard(matchIds, filter) {
 }
 
 function renderLeaderboardTable(users, filter, totalCompleted = 0) {
-  const myId     = STATE.session.userId;
-  const rankIcon = ['🥇','🥈','🥉'];
+  const myId      = STATE.session.userId;
+  const rankIcon  = ['🥇','🥈','🥉'];
   const container = document.getElementById('leaderboard-body');
-  const prevRanks = loadPrevRanks();
+  const prevRanks = STATE.prevRanks || {};
 
   if (users.length === 0) {
     container.innerHTML = '<div class="lb-empty">No data yet</div>';
@@ -1034,9 +1041,6 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
 
   // Store snapshot for share card
   STATE.leaderboardSnapshot = { users: [...users], filter, totalCompleted };
-
-  // Save rank snapshot for next visit (overall only)
-  if (!filter) saveRankSnapshot(users);
 
   // Row tap → toggle expand drawer
   document.querySelectorAll('.lb-tr').forEach(row => {
@@ -1174,21 +1178,33 @@ async function downloadLeaderboardCard() {
         : i % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
       if (ctx.fillStyle !== 'transparent') ctx.fillRect(24, y + 2, W - 48, ROW_H - 3);
 
-      // Rank
+      // Rank circle / number
       if (i < 3) {
         ctx.fillStyle = RANK_CLR[i];
         ctx.beginPath();
-        ctx.arc(COL.rank, midY - 10, 22, 0, Math.PI * 2);
+        ctx.arc(COL.rank, midY - 14, 20, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#000';
-        ctx.font = 'bold 26px Arial';
+        ctx.font = 'bold 24px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(String(i + 1), COL.rank, midY - 2);
+        ctx.fillText(String(i + 1), COL.rank, midY - 6);
       } else {
         ctx.fillStyle = '#555';
-        ctx.font = '26px Arial';
+        ctx.font = '24px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(String(i + 1), COL.rank, midY - 2);
+        ctx.fillText(String(i + 1), COL.rank, midY - 6);
+      }
+
+      // Rank movement arrow
+      const prevR = STATE.prevRanks[u.id];
+      if (prevR != null) {
+        const move = prevR - (i + 1);
+        if (move !== 0) {
+          ctx.textAlign = 'center';
+          ctx.font = `bold 16px Arial`;
+          ctx.fillStyle = move > 0 ? '#4CAF50' : '#FF5252';
+          ctx.fillText(move > 0 ? `↑${move}` : `↓${Math.abs(move)}`, COL.rank, midY + 14);
+        }
       }
 
       // Name (truncate to fit)
@@ -1563,6 +1579,8 @@ async function saveMatchResult(matchId, autoRA, autoRB) {
   const rB = autoRB !== undefined ? autoRB : parseInt(document.getElementById(`res-b-${matchId}`)?.value, 10);
   if (isNaN(rA) || isNaN(rB)) { showToast('Enter valid scores', 'error'); return; }
   try {
+    // Save current rank order BEFORE this match changes the standings
+    await saveRankSnapshot();
     STATE.allPredictions = null; // invalidate cache so leaderboard re-fetches
     await setDoc(doc(STATE.db, 'matches', matchId), { resultA: rA, resultB: rB, status: 'completed' }, { merge: true });
     const pSnap = await getDocs(query(collection(STATE.db, 'predictions'), where('matchId', '==', matchId)));
