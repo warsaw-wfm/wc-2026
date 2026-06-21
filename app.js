@@ -644,7 +644,7 @@ async function openPredictView(matchId) {
   if (!m) return;
   STATE.currentPredictMatch = m;
   const pred   = STATE.predictions[matchId];
-  const locked = isLocked(m) || m.status === 'locked' || m.status === 'completed';
+  const locked = isLocked(m) || m.status === 'locked' || m.status === 'completed' || getLockMs(m) <= Date.now();
 
   document.getElementById('predict-meta').textContent    = `${m.matchDay} · ${formatKickoff(m.kickoffUTC)} · ${m.venue}`;
   document.getElementById('predict-flag-a').textContent  = getFlag(m.teamA, m.flagA);
@@ -714,7 +714,13 @@ function adjustScore(team, delta) {
 async function savePrediction() {
   const m = STATE.currentPredictMatch;
   if (!m || !STATE.session) return;
-  if (isLocked(m)) { showToast('Predictions are closed for this match', 'lock'); return; }
+
+  // Always read live status from STATE.matches (stale currentPredictMatch may lag)
+  const live = STATE.matches.find(x => x.matchId === m.matchId) || m;
+  if (isLocked(live) || live.status === 'completed' || live.status === 'locked') {
+    showToast('Predictions are closed for this match', 'lock');
+    return;
+  }
 
   // Guard against double-submit (numpad done key + save button both firing)
   const btn = document.getElementById('predict-save-btn');
