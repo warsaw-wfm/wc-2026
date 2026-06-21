@@ -1103,19 +1103,21 @@ async function downloadLeaderboardCard() {
   try {
     const { users, filter } = snap;
 
-    // Canvas dimensions
-    const W     = 1080;
-    const TOP   = 250;
-    const ROW_H = 70;
-    const BOT   = 70;
+    // ── True HD: draw at 2× then let the browser display at 1×
+    const DPR   = 2;
+    const W     = 1080;   // logical px
+    const TOP   = 270;
+    const ROW_H = 86;
+    const BOT   = 80;
     const H     = TOP + users.length * ROW_H + BOT;
 
     const canvas = document.createElement('canvas');
-    canvas.width  = W;
-    canvas.height = H;
+    canvas.width  = W  * DPR;
+    canvas.height = H  * DPR;
     const ctx = canvas.getContext('2d');
+    ctx.scale(DPR, DPR);   // all drawing commands use logical px from here
 
-    // ── Background: fetch→blob avoids canvas CORS taint ──
+    // ── Background ────────────────────────────────────────
     let bgLoaded = false;
     try {
       const resp = await fetch('26.jpg');
@@ -1125,17 +1127,14 @@ async function downloadLeaderboardCard() {
         const bg      = new Image();
         await new Promise((res, rej) => { bg.onload = res; bg.onerror = rej; bg.src = blobUrl; });
         URL.revokeObjectURL(blobUrl);
-
-        // Cover-fit
         const sc = Math.max(W / bg.naturalWidth, H / bg.naturalHeight);
         ctx.drawImage(bg, (W - bg.naturalWidth * sc) / 2, (H - bg.naturalHeight * sc) / 2,
                       bg.naturalWidth * sc, bg.naturalHeight * sc);
         bgLoaded = true;
       }
-    } catch (_) { /* fall through to gradient */ }
+    } catch (_) {}
 
     if (!bgLoaded) {
-      // Gradient fallback
       const grd = ctx.createLinearGradient(0, 0, 0, H);
       grd.addColorStop(0, '#0a1628');
       grd.addColorStop(1, '#0d1f3c');
@@ -1143,80 +1142,80 @@ async function downloadLeaderboardCard() {
       ctx.fillRect(0, 0, W, H);
     }
 
-    // Dark overlay (heavier so background text doesn't bleed through)
-    ctx.fillStyle = 'rgba(6, 12, 28, 0.88)';
+    // Overlay — slightly lighter so background image breathes through
+    ctx.fillStyle = 'rgba(5, 10, 25, 0.82)';
     ctx.fillRect(0, 0, W, H);
 
     // ── Header ────────────────────────────────────────────
     ctx.textAlign = 'center';
 
-    // Trophy emoji
-    ctx.font = '72px serif';
-    ctx.fillText('🏆', W / 2, 80);
+    ctx.font = '80px serif';
+    ctx.fillText('🏆', W / 2, 88);
 
-    // Game title — drawn as text, not taken from image
     ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 58px Arial, sans-serif';
-    ctx.fillText('Warsaw WFM WC 2026', W / 2, 155);
+    ctx.font = 'bold 68px Arial Black, Arial, sans-serif';
+    ctx.fillText('Warsaw WFM WC 2026', W / 2, 168);
 
-    // Date only — no group/filter label
     const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    ctx.fillStyle = '#888';
-    ctx.font = '30px Arial, sans-serif';
-    ctx.fillText(dateStr, W / 2, 200);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '34px Arial, sans-serif';
+    ctx.fillText(dateStr, W / 2, 218);
 
     // ── Column headers ────────────────────────────────────
-    const COL = { rank: 62, name: 125, exact: 726, winner: 838, pts: 1042 };
+    const COL = { rank: 66, name: 132, exact: 726, winner: 848, pts: 1050 };
 
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.fillRect(24, TOP - 40, W - 48, 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(28, TOP - 44, W - 56, 1.5);
 
-    ctx.fillStyle = '#666';
-    ctx.font = '26px Arial, sans-serif';
+    ctx.fillStyle = '#999';
+    ctx.font = '28px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🎯', COL.exact,  TOP - 12);
-    ctx.fillText('✅', COL.winner, TOP - 12);
+    ctx.fillText('🎯', COL.exact,  TOP - 14);
+    ctx.fillText('✅', COL.winner, TOP - 14);
     ctx.textAlign = 'right';
-    ctx.fillText('PTS', COL.pts, TOP - 12);
+    ctx.fillText('PTS', COL.pts, TOP - 14);
 
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.fillRect(24, TOP - 6, W - 48, 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(28, TOP - 6, W - 56, 1.5);
 
     // ── Rows ──────────────────────────────────────────────
     const GOLD     = '#FFD700';
-    const SILVER   = '#B8C4CE';
-    const BRONZE   = '#CD8A4A';
+    const SILVER   = '#C8D6E0';
+    const BRONZE   = '#D4915A';
     const RANK_CLR = [GOLD, SILVER, BRONZE];
 
     users.forEach((u, i) => {
       const y    = TOP + i * ROW_H;
-      const midY = y + ROW_H * 0.62;
+      const midY = y + ROW_H * 0.58;
       const pts    = filter ? (u.filteredPoints    || 0) : (u.totalPoints    || 0);
       const exact  = filter ? (u.filteredExact     || 0) : (u.computedExact  || 0);
       const winner = filter ? (u.filteredWinner    || 0) : (u.computedWinner || 0);
       const isMe   = u.id === STATE.session.userId;
 
       // Row background
-      ctx.fillStyle = isMe
-        ? 'rgba(255,215,0,0.07)'
-        : i % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
-      if (ctx.fillStyle !== 'transparent') ctx.fillRect(24, y + 2, W - 48, ROW_H - 3);
+      if (isMe) {
+        ctx.fillStyle = 'rgba(255,215,0,0.09)';
+        ctx.fillRect(28, y + 2, W - 56, ROW_H - 3);
+      } else if (i % 2 === 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.fillRect(28, y + 2, W - 56, ROW_H - 3);
+      }
 
       // Rank circle / number
       if (i < 3) {
         ctx.fillStyle = RANK_CLR[i];
         ctx.beginPath();
-        ctx.arc(COL.rank, midY - 14, 20, 0, Math.PI * 2);
+        ctx.arc(COL.rank, midY - 12, 24, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#000';
-        ctx.font = 'bold 24px Arial';
+        ctx.font = 'bold 28px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(String(i + 1), COL.rank, midY - 6);
+        ctx.fillText(String(i + 1), COL.rank, midY - 3);
       } else {
-        ctx.fillStyle = '#555';
-        ctx.font = '24px Arial';
+        ctx.fillStyle = '#aaa';
+        ctx.font = 'bold 30px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(String(i + 1), COL.rank, midY - 6);
+        ctx.fillText(String(i + 1), COL.rank, midY - 3);
       }
 
       // Rank movement arrow
@@ -1225,47 +1224,50 @@ async function downloadLeaderboardCard() {
         const move = prevR - (i + 1);
         if (move !== 0) {
           ctx.textAlign = 'center';
-          ctx.font = `bold 16px Arial`;
+          ctx.font = 'bold 18px Arial';
           ctx.fillStyle = move > 0 ? '#4CAF50' : '#FF5252';
-          ctx.fillText(move > 0 ? `↑${move}` : `↓${Math.abs(move)}`, COL.rank, midY + 14);
+          ctx.fillText(move > 0 ? `↑${move}` : `↓${Math.abs(move)}`, COL.rank, midY + 18);
         }
       }
 
-      // Name (truncate to fit)
+      // Name
       ctx.textAlign = 'left';
-      ctx.font = `${isMe ? 'bold ' : ''}34px Arial, sans-serif`;
-      ctx.fillStyle = isMe ? GOLD : (i < 3 ? '#fff' : '#ddd');
-      const maxNameW = COL.exact - COL.name - 30;
+      ctx.font = `${isMe ? 'bold ' : ''}40px Arial, sans-serif`;
+      ctx.fillStyle = isMe ? GOLD : (i < 3 ? '#ffffff' : '#e8e8e8');
+      const maxNameW = COL.exact - COL.name - 32;
       let name = u.nickname.toUpperCase();
       while (ctx.measureText(name).width > maxNameW && name.length > 3) name = name.slice(0, -1);
       if (name !== u.nickname.toUpperCase()) name += '…';
-      ctx.fillText(name, COL.name, midY - 1);
+      ctx.fillText(name, COL.name, midY);
 
-      // Exact / Correct / Points
+      // Exact
       ctx.textAlign = 'center';
-      ctx.font = 'bold 32px Arial';
-      ctx.fillStyle = exact  > 0 ? GOLD      : '#444';
-      ctx.fillText(String(exact),  COL.exact,  midY - 1);
-      ctx.fillStyle = winner > 0 ? '#4CAF50'  : '#444';
-      ctx.fillText(String(winner), COL.winner, midY - 1);
+      ctx.font = 'bold 38px Arial';
+      ctx.fillStyle = exact > 0 ? GOLD : '#666';
+      ctx.fillText(String(exact), COL.exact, midY);
 
+      // Correct
+      ctx.fillStyle = winner > 0 ? '#4CAF50' : '#666';
+      ctx.fillText(String(winner), COL.winner, midY);
+
+      // Points — always bright white/gold, large
       ctx.textAlign = 'right';
-      ctx.font = `bold ${pts >= 100 ? '36' : '40'}px Arial`;
-      ctx.fillStyle = i === 0 ? GOLD : i === 1 ? SILVER : i === 2 ? BRONZE : '#fff';
-      ctx.fillText(String(pts), COL.pts, midY - 1);
+      ctx.font = `bold ${pts >= 100 ? '42' : '46'}px Arial`;
+      ctx.fillStyle = i === 0 ? GOLD : i === 1 ? SILVER : i === 2 ? BRONZE : '#ffffff';
+      ctx.fillText(String(pts), COL.pts, midY);
 
       // Row separator
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
-      ctx.fillRect(24, y + ROW_H - 1, W - 48, 1);
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.fillRect(28, y + ROW_H - 1, W - 56, 1);
     });
 
     // ── Footer ────────────────────────────────────────────
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.fillRect(24, H - BOT, W - 48, 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fillRect(28, H - BOT, W - 56, 1);
     ctx.textAlign = 'center';
-    ctx.font = '24px Arial';
-    ctx.fillStyle = '#444';
-    ctx.fillText('warsaw-wfm.github.io/wc-2026', W / 2, H - 24);
+    ctx.font = '26px Arial';
+    ctx.fillStyle = '#555';
+    ctx.fillText('warsaw-wfm.github.io/wc-2026', W / 2, H - 26);
 
     // ── Share ─────────────────────────────────────────────
     const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
