@@ -740,7 +740,19 @@ async function savePrediction() {
       predictedA: scoreA, predictedB: scoreB,
       updatedAt: serverTimestamp(), lastMinute: lastMin,
     };
-    if (!existing) pred.submittedAt = serverTimestamp();
+    if (!existing) {
+      pred.submittedAt = serverTimestamp();
+    } else {
+      // Audit trail — record previous values whenever a prediction is edited
+      // Stored as an array on the prediction doc; fire-and-forget, never blocks UI
+      const prevA = existing.predictedA, prevB = existing.predictedB;
+      if (prevA !== scoreA || prevB !== scoreB) {
+        const editEntry = { previousA: prevA, previousB: prevB, changedAt: new Date().toISOString() };
+        const existingEdits = (await getDoc(doc(STATE.db, 'predictions', predId)))
+          .data()?.edits || [];
+        pred.edits = [...existingEdits, editEntry];
+      }
+    }
     await setDoc(doc(STATE.db, 'predictions', predId), pred, { merge: true });
     saved = true; // ← primary write succeeded; never show error toast after this point
 
@@ -1165,6 +1177,7 @@ async function renderAdminUsers() {
       <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end">
         <button class="btn-sm btn-secondary" data-rename-user="${u.id}" data-nickname="${u.nickname}">✏️ Rename</button>
         <button class="btn-sm btn-secondary" data-resetpin-user="${u.id}" data-nickname="${u.nickname}">🔑 Reset PIN</button>
+        <button class="btn-sm btn-secondary" data-audit-user="${u.id}" data-nickname="${u.nickname}">📋 Edits</button>
         <button class="btn-sm btn-danger"    data-delete-user="${u.id}">Delete</button>
       </div>
     </div>`).join('');
@@ -1206,6 +1219,34 @@ async function renderAdminUsers() {
       if (!confirm('Delete this user?')) return;
       await updateDoc(doc(STATE.db, 'users', btn.dataset.deleteUser), { disabled: true });
       showToast('User disabled', 'success'); renderAdminUsers();
+    });
+  });
+
+  list.querySelectorAll('[data-audit-user]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const uid      = btn.dataset.auditUser;
+      const nickname = btn.dataset.nickname;
+      const snap = await getDocs(query(
+        collection(STATE.db, 'predictions'),
+        where('userId', '==', uid)
+      ));
+      const edited = [];
+      snap.forEach(d => {
+        const p = d.data();
+        if (p.edits?.length) {
+          const match = STATE.matches.find(x => x.matchId === p.matchId);
+          const label = match ? `${match.teamA} vs ${match.teamB}` : p.matchId;
+          edited.push({ label, current: `${p.predictedA}–${p.predictedB}`, edits: p.edits });
+        }
+      });
+      if (!edited.length) {
+        showToast(`${nickname} has no edited predictions`, 'info'); return;
+      }
+      const lines = edited.map(e =>
+        `${e.label} (now: ${e.current})\n` +
+        e.edits.map(x => `  ↩ was ${x.previousA}–${x.previousB} · changed ${new Date(x.changedAt).toLocaleString('en-GB')}`).join('\n')
+      ).join('\n\n');
+      alert(`📋 Edit history for ${nickname}:\n\n${lines}`);
     });
   });
 }
