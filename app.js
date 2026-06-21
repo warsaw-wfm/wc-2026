@@ -901,6 +901,15 @@ async function initLeaderboard() {
   await Promise.all([fetchUsers(), fetchAllPredictions(), fetchPrevRanks()]);
   await computeUserAccuracy();
   renderLeaderboard('overall');
+  // Bootstrap: if no snapshot exists yet, seed one from current standings.
+  // From this point on, the next match save will capture pre-match ranks
+  // and arrows will show movement on every subsequent load.
+  if (Object.keys(STATE.prevRanks).length === 0 && STATE.users.length > 0) {
+    await saveRankSnapshot();
+    // Reload so the arrows reflect the just-saved baseline on this visit too
+    await fetchPrevRanks();
+    renderLeaderboard('overall');
+  }
 }
 
 async function renderLeaderboard(filter) {
