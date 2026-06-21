@@ -40,23 +40,38 @@ const STATE = {
   currentPredictMatch: null,
 };
 
-// ── Rank movement — Firestore-backed, persists across deploys ──
+// ── Rank movement — Firestore preferred, localStorage fallback ──
+const LS_RANK_KEY = 'wwfm_rankSnapshot_v2';
+
 async function fetchPrevRanks() {
   try {
     const snap = await getDoc(doc(STATE.db, 'config', 'rankSnapshot'));
-    STATE.prevRanks = (snap.exists() && snap.data().ranks) ? snap.data().ranks : {};
-  } catch { STATE.prevRanks = {}; }
+    if (snap.exists() && snap.data().ranks) {
+      STATE.prevRanks = snap.data().ranks;
+      // Mirror to localStorage so other tabs/offline work too
+      localStorage.setItem(LS_RANK_KEY, JSON.stringify(STATE.prevRanks));
+      return;
+    }
+  } catch (e) { console.warn('fetchPrevRanks Firestore:', e); }
+  // Fallback to localStorage
+  try { STATE.prevRanks = JSON.parse(localStorage.getItem(LS_RANK_KEY)) || {}; }
+  catch { STATE.prevRanks = {}; }
 }
 
 async function saveRankSnapshot() {
   if (!STATE.users.length) return;
   const ranks = {};
   STATE.users.forEach((u, i) => { ranks[u.id] = i + 1; });
+  // Always update in-memory and localStorage immediately
+  STATE.prevRanks = ranks;
+  localStorage.setItem(LS_RANK_KEY, JSON.stringify(ranks));
+  // Try Firestore (requires config/rankSnapshot write rule to be published)
   try {
     await setDoc(doc(STATE.db, 'config', 'rankSnapshot'),
       { ranks, savedAt: serverTimestamp() });
-    STATE.prevRanks = ranks;
-  } catch (e) { console.warn('saveRankSnapshot:', e); }
+  } catch (e) {
+    console.warn('saveRankSnapshot Firestore write failed (rules published?):', e.message);
+  }
 }
 
 // ── Session ────────────────────────────────────────────
