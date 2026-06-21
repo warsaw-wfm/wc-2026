@@ -1484,25 +1484,15 @@ async function addAdminUser() {
 function renderAdminMatches() {
   const container = document.getElementById('admin-match-list');
 
-  // Upcoming: chronological. Finished: latest first.
-  const upcoming = STATE.matches
-    .filter(m => m.status !== 'completed')
-    .sort((a, b) => new Date(a.kickoffUTC) - new Date(b.kickoffUTC));
-  const finished = STATE.matches
-    .filter(m => m.status === 'completed')
-    .sort((a, b) => new Date(b.kickoffUTC) - new Date(a.kickoffUTC));
+  // All matches, latest kickoff first
+  const sorted = [...STATE.matches].sort((a, b) => new Date(b.kickoffUTC) - new Date(a.kickoffUTC));
 
-  // Group each list by match day (preserving sorted order)
-  function groupByDay(list) {
-    const map = new Map();
-    list.forEach(m => {
-      if (!map.has(m.matchDay)) map.set(m.matchDay, []);
-      map.get(m.matchDay).push(m);
-    });
-    return map;
-  }
-  const upcomingGroups = groupByDay(upcoming);
-  const finishedGroups = groupByDay(finished);
+  // Group by match day, preserving latest-first order
+  const byDay = new Map();
+  sorted.forEach(m => {
+    if (!byDay.has(m.matchDay)) byDay.set(m.matchDay, []);
+    byDay.get(m.matchDay).push(m);
+  });
 
   const fetchBtn = `
     <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
@@ -1513,10 +1503,9 @@ function renderAdminMatches() {
       <span style="font-size:0.78rem;color:var(--muted)">Auto-runs every hour via GitHub Actions · click to trigger manually</span>
     </div>`;
 
-  function renderGroups(groupMap) {
-    let html = '';
-    groupMap.forEach((matches, day) => {
-      html += `
+  let groupsHtml = '';
+  byDay.forEach((matches, day) => {
+    groupsHtml += `
     <div class="admin-card" style="margin-bottom:1rem">
       <div class="admin-card-head">${day}</div>
       <div class="admin-card-body" style="padding:0">
@@ -1541,18 +1530,9 @@ function renderAdminMatches() {
         }).join('')}
       </div>
     </div>`;
-    });
-    return html;
-  }
+  });
 
-  const upcomingSection = upcomingGroups.size
-    ? `<h3 style="margin:.5rem 0 .75rem;font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Upcoming</h3>${renderGroups(upcomingGroups)}`
-    : '';
-  const finishedSection = finishedGroups.size
-    ? `<h3 style="margin:1.25rem 0 .75rem;font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Finished</h3>${renderGroups(finishedGroups)}`
-    : '';
-
-  container.innerHTML = fetchBtn + upcomingSection + finishedSection;
+  container.innerHTML = fetchBtn + groupsHtml;
 }
 
 // ── Save a single match result (manual or auto) ────────
