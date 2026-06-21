@@ -1773,7 +1773,7 @@ body.admin-mode #bottom-nav #my-picks-btn {
 /* ── Leaderboard header — single tight row ─────────── */
 .lb-view-header {
   flex-wrap: nowrap;
-  gap: .55rem;
+  gap: .5rem;
   padding: .55rem 1rem;
 }
 .lb-view-header .view-title {
@@ -1781,9 +1781,8 @@ body.admin-mode #bottom-nav #my-picks-btn {
   margin: 0;
 }
 .lb-filter-select {
-  flex: 1 1 auto;
-  min-width: 80px;
-  max-width: 200px;
+  width: auto;
+  flex-shrink: 0;
   height: 34px;
   padding: 0 .5rem;
   font-size: .82rem;
@@ -1791,14 +1790,19 @@ body.admin-mode #bottom-nav #my-picks-btn {
   appearance: auto;
 }
 .lb-share-btn {
+  /* override btn-secondary — plain icon button */
   flex-shrink: 0;
-  margin-left: auto;
-  font-size: 1.2rem;
-  padding: 0 .55rem;
-  height: 34px;
-  line-height: 34px;
-  border-radius: 8px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 .25rem;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: .85;
+  transition: opacity .15s;
 }
+.lb-share-btn:hover { opacity: 1; }
 
 /* ── Leaderboard legend ───────────────────────────── */
 .lb-legend {
