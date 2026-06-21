@@ -1481,58 +1481,80 @@ async function addAdminUser() {
   } catch (e) { showToast('Error adding user', 'error'); console.error(e); }
 }
 
-function renderAdminMatches() {
+function renderAdminMatches(activeTab) {
   const container = document.getElementById('admin-match-list');
+  const tab = activeTab || 'upcoming';
 
-  // All matches, latest kickoff first
-  const sorted = [...STATE.matches].sort((a, b) => new Date(b.kickoffUTC) - new Date(a.kickoffUTC));
+  // Upcoming: soonest first. Completed: latest first.
+  const upcoming  = STATE.matches
+    .filter(m => m.status !== 'completed')
+    .sort((a, b) => new Date(a.kickoffUTC) - new Date(b.kickoffUTC));
+  const completed = STATE.matches
+    .filter(m => m.status === 'completed')
+    .sort((a, b) => new Date(b.kickoffUTC) - new Date(a.kickoffUTC));
 
-  // Group by match day, preserving latest-first order
-  const byDay = new Map();
-  sorted.forEach(m => {
-    if (!byDay.has(m.matchDay)) byDay.set(m.matchDay, []);
-    byDay.get(m.matchDay).push(m);
-  });
+  function groupByDay(list) {
+    const map = new Map();
+    list.forEach(m => {
+      if (!map.has(m.matchDay)) map.set(m.matchDay, []);
+      map.get(m.matchDay).push(m);
+    });
+    return map;
+  }
 
-  const fetchBtn = `
-    <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+  function matchRows(matches) {
+    return matches.map(m => {
+      const hasResult = m.resultA != null && m.resultB != null;
+      return `
+      <div class="match-admin-row" style="padding:.875rem 1rem">
+        <div class="match-admin-teams">
+          <span>${getFlag(m.teamA, m.flagA)} ${m.teamA} vs ${m.teamB} ${getFlag(m.teamB, m.flagB)}</span>
+          <span class="status-badge ${m.status}">${m.status}${hasResult ? ` · ${m.resultA}–${m.resultB}` : ''}</span>
+        </div>
+        <div class="match-admin-meta">${formatKickoff(m.kickoffUTC)} · ${m.venue}</div>
+        <div class="result-entry">
+          <input class="result-input" id="res-a-${m.matchId}" type="number" min="0" max="20" placeholder="–" value="${m.resultA ?? ''}">
+          <span class="result-dash">–</span>
+          <input class="result-input" id="res-b-${m.matchId}" type="number" min="0" max="20" placeholder="–" value="${m.resultB ?? ''}">
+          <button class="btn btn-secondary btn-sm" style="width:auto;font-size:0.72rem" onclick="saveMatchResult('${m.matchId}')">
+            ${hasResult ? '✏️ Override' : 'Save'}
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderGroupMap(groupMap) {
+    let html = '';
+    groupMap.forEach((matches, day) => {
+      html += `
+      <div class="admin-card" style="margin-bottom:1rem">
+        <div class="admin-card-head">${day}</div>
+        <div class="admin-card-body" style="padding:0">${matchRows(matches)}</div>
+      </div>`;
+    });
+    return html || `<p style="color:var(--muted);text-align:center;padding:2rem 0">No matches here yet.</p>`;
+  }
+
+  const upcomingHtml  = renderGroupMap(groupByDay(upcoming));
+  const completedHtml = renderGroupMap(groupByDay(completed));
+
+  container.innerHTML = `
+    <div class="admin-match-tabs">
+      <button class="admin-match-tab ${tab === 'upcoming'  ? 'active' : ''}" onclick="renderAdminMatches('upcoming')">⏳ Upcoming</button>
+      <button class="admin-match-tab ${tab === 'completed' ? 'active' : ''}" onclick="renderAdminMatches('completed')">✅ Completed</button>
+    </div>
+
+    <div style="margin-bottom:1.25rem;display:flex;flex-direction:column;align-items:stretch;gap:.5rem">
       <a href="https://github.com/warsaw-wfm/wc-2026/actions/workflows/fetch-results.yml"
-         target="_blank" class="btn btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:.4rem">
+         target="_blank" class="btn btn-primary" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:.5rem;font-size:1rem;padding:.9rem">
         🔄 Run Fetch Now
       </a>
-      <span style="font-size:0.78rem;color:var(--muted)">Auto-runs every hour via GitHub Actions · click to trigger manually</span>
-    </div>`;
+      <span style="font-size:0.78rem;color:var(--muted);text-align:center">Auto-runs every hour via GitHub Actions · click to trigger manually</span>
+    </div>
 
-  let groupsHtml = '';
-  byDay.forEach((matches, day) => {
-    groupsHtml += `
-    <div class="admin-card" style="margin-bottom:1rem">
-      <div class="admin-card-head">${day}</div>
-      <div class="admin-card-body" style="padding:0">
-        ${matches.map(m => {
-          const hasResult = m.resultA != null && m.resultB != null;
-          return `
-          <div class="match-admin-row" style="padding:.875rem 1rem">
-            <div class="match-admin-teams">
-              <span>${getFlag(m.teamA, m.flagA)} ${m.teamA} vs ${m.teamB} ${getFlag(m.teamB, m.flagB)}</span>
-              <span class="status-badge ${m.status}">${m.status}${hasResult ? ` · ${m.resultA}–${m.resultB}` : ''}</span>
-            </div>
-            <div class="match-admin-meta">${formatKickoff(m.kickoffUTC)} · ${m.venue}</div>
-            <div class="result-entry">
-              <input class="result-input" id="res-a-${m.matchId}" type="number" min="0" max="20" placeholder="–" value="${m.resultA ?? ''}">
-              <span class="result-dash">–</span>
-              <input class="result-input" id="res-b-${m.matchId}" type="number" min="0" max="20" placeholder="–" value="${m.resultB ?? ''}">
-              <button class="btn btn-secondary btn-sm" style="width:auto;font-size:0.72rem" onclick="saveMatchResult('${m.matchId}')">
-                ${hasResult ? '✏️ Override' : 'Save'}
-              </button>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  });
-
-  container.innerHTML = fetchBtn + groupsHtml;
+    <div id="admin-match-pane-upcoming"  style="display:${tab === 'upcoming'  ? 'block' : 'none'}">${upcomingHtml}</div>
+    <div id="admin-match-pane-completed" style="display:${tab === 'completed' ? 'block' : 'none'}">${completedHtml}</div>`;
 }
 
 // ── Save a single match result (manual or auto) ────────

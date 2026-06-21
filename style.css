@@ -1746,6 +1746,30 @@ body.admin-mode #bottom-nav #my-picks-btn {
 }
 .lb-compare-btn:hover { background: rgba(240,180,41,0.15); }
 
+/* ── Admin matches tab switcher ───────────────────── */
+.admin-match-tabs {
+  display: flex;
+  gap: .75rem;
+  margin-bottom: 1.1rem;
+}
+.admin-match-tab {
+  flex: 1;
+  padding: .85rem 1rem;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  color: var(--text-muted, #888);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.admin-match-tab.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(240,180,41,.06);
+}
+
 /* ── Download share-card button ───────────────────── */
 .lb-download-btn {
   flex-shrink: 0;
