@@ -1775,29 +1775,33 @@ body.admin-mode #bottom-nav #my-picks-btn {
   flex-wrap: nowrap;
   gap: .5rem;
   padding: .55rem 1rem;
+  align-items: center;
 }
 .lb-view-header .view-title {
-  flex-shrink: 0;
+  flex: 1 1 auto;   /* title fills leftover space */
   margin: 0;
+  min-width: 0;
 }
 .lb-filter-select {
-  width: auto;
-  flex-shrink: 0;
+  flex: 0 0 auto;   /* shrinks to content, never grows */
+  max-width: 140px;
   height: 34px;
-  padding: 0 .5rem;
+  padding: 0 .4rem;
   font-size: .82rem;
   -webkit-appearance: auto;
   appearance: auto;
 }
 .lb-share-btn {
-  /* override btn-secondary — plain icon button */
-  flex-shrink: 0;
+  flex: 0 0 auto;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  padding: 0 .25rem;
-  font-size: 1.35rem;
-  line-height: 1;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 1.3rem;
+  line-height: 34px;
+  text-align: center;
   cursor: pointer;
   opacity: .85;
   transition: opacity .15s;
