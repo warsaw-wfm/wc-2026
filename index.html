@@ -22,7 +22,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="style.css?v=20260619d">
+  <link rel="stylesheet" href="style.css?v=20260621b">
 
   <!-- Firebase SDK (compat v9 modular via CDN) -->
   <script type="module">
@@ -280,9 +280,12 @@
     <div>
       <h2 class="view-title">Leaderboard</h2>
     </div>
-    <select id="leaderboard-filter" class="filter-select">
-      <option value="overall">Overall</option>
-    </select>
+    <div style="display:flex;align-items:center;gap:.5rem">
+      <select id="leaderboard-filter" class="filter-select">
+        <option value="overall">Overall</option>
+      </select>
+      <button id="lb-download-btn" class="btn btn-secondary lb-download-btn" title="Download share card">📷</button>
+    </div>
   </div>
 
   <div id="leaderboard-body" class="lb-list">
@@ -544,7 +547,7 @@
 <script>
   function loadApp() {
     const s = document.createElement('script');
-    s.src = 'app.js?v=20260621a';
+    s.src = 'app.js?v=20260621b';
     document.body.appendChild(s);
   }
   if (window.firebaseReady) {

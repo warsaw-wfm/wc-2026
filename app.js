@@ -33,7 +33,8 @@ const STATE = {
   matches: [],
   predictions: {},
   users: [],
-  allPredictions: null,   // cached full predictions scan
+  allPredictions: null,      // cached full predictions scan
+  leaderboardSnapshot: null, // last rendered {users, filter, totalCompleted}
   countdownTimers: [],
   currentPredictMatch: null,
 };
@@ -1031,6 +1032,9 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
   document.getElementById('leaderboard-updated').textContent =
     `Updated ${new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}`;
 
+  // Store snapshot for share card
+  STATE.leaderboardSnapshot = { users: [...users], filter, totalCompleted };
+
   // Save rank snapshot for next visit (overall only)
   if (!filter) saveRankSnapshot(users);
 
@@ -1057,6 +1061,183 @@ function renderLeaderboardTable(users, filter, totalCompleted = 0) {
       openCompareModal(btn.dataset.uid, btn.dataset.nickname);
     });
   });
+}
+
+// ── Leaderboard Share Card ─────────────────────────────
+async function downloadLeaderboardCard() {
+  const snap = STATE.leaderboardSnapshot;
+  if (!snap || !snap.users.length) { showToast('Load the leaderboard first', 'error'); return; }
+
+  const btn = document.getElementById('lb-download-btn');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+
+  try {
+    const { users, filter, totalCompleted } = snap;
+
+    // Canvas dimensions
+    const W      = 1080;
+    const TOP    = 250;   // header area height
+    const ROW_H  = 70;
+    const BOT    = 70;    // footer area height
+    const H      = TOP + users.length * ROW_H + BOT;
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // ── Background image ──────────────────────────────────
+    const bg = new Image();
+    bg.crossOrigin = 'anonymous';
+    await new Promise((res, rej) => { bg.onload = res; bg.onerror = rej; bg.src = '26.jpg'; });
+
+    // Cover-fit the background
+    const scale = Math.max(W / bg.naturalWidth, H / bg.naturalHeight);
+    const bw = bg.naturalWidth * scale, bh = bg.naturalHeight * scale;
+    ctx.drawImage(bg, (W - bw) / 2, (H - bh) / 2, bw, bh);
+
+    // Dark overlay
+    ctx.fillStyle = 'rgba(8, 15, 35, 0.84)';
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Header ────────────────────────────────────────────
+    // Trophy
+    ctx.font = '72px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏆', W / 2, 80);
+
+    // Title
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 66px Arial, sans-serif';
+    ctx.fillText('KPH WC 2026', W / 2, 158);
+
+    // Sub-title: date (and filter label if not overall)
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const subLabel = filter ? `${filter.replace(/^[^\w]*/, '')} · ${dateStr}` : dateStr;
+    ctx.fillStyle = '#999';
+    ctx.font = '30px Arial, sans-serif';
+    ctx.fillText(subLabel, W / 2, 200);
+
+    // ── Column header labels ──────────────────────────────
+    const COL = { rank: 62, name: 125, exact: 726, winner: 838, pts: 1042 };
+
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fillRect(24, TOP - 38, W - 48, 1);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '26px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎯', COL.exact,  TOP - 12);
+    ctx.fillText('✅', COL.winner, TOP - 12);
+    ctx.textAlign = 'right';
+    ctx.fillText('PTS', COL.pts, TOP - 12);
+
+    // Separator under column headers
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fillRect(24, TOP - 6, W - 48, 1);
+
+    // ── Rows ──────────────────────────────────────────────
+    const GOLD   = '#FFD700';
+    const SILVER = '#B8C4CE';
+    const BRONZE = '#CD8A4A';
+    const RANK_CLR = [GOLD, SILVER, BRONZE];
+
+    users.forEach((u, i) => {
+      const y    = TOP + i * ROW_H;
+      const midY = y + ROW_H * 0.62;
+      const pts    = filter ? (u.filteredPoints    || 0) : (u.totalPoints    || 0);
+      const exact  = filter ? (u.filteredExact     || 0) : (u.computedExact  || 0);
+      const winner = filter ? (u.filteredWinner    || 0) : (u.computedWinner || 0);
+      const isMe   = u.id === STATE.session.userId;
+
+      // Row background
+      if (isMe) {
+        ctx.fillStyle = 'rgba(255,215,0,0.07)';
+        ctx.fillRect(24, y + 2, W - 48, ROW_H - 3);
+      } else if (i % 2 === 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.fillRect(24, y + 2, W - 48, ROW_H - 3);
+      }
+
+      // Rank number (colored circle for top 3)
+      if (i < 3) {
+        ctx.fillStyle = RANK_CLR[i];
+        ctx.beginPath();
+        ctx.arc(COL.rank, midY - 10, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 26px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(i + 1), COL.rank, midY - 2);
+      } else {
+        ctx.fillStyle = '#555';
+        ctx.font = '26px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(i + 1), COL.rank, midY - 2);
+      }
+
+      // Player name (truncate if too long)
+      ctx.textAlign = 'left';
+      ctx.font = `${isMe ? 'bold ' : ''}34px Arial, sans-serif`;
+      ctx.fillStyle = isMe ? GOLD : (i < 3 ? '#fff' : '#ddd');
+      const maxW = COL.exact - COL.name - 30;
+      let name = u.nickname.toUpperCase();
+      while (ctx.measureText(name).width > maxW && name.length > 3) name = name.slice(0, -1);
+      if (name !== u.nickname.toUpperCase()) name += '…';
+      ctx.fillText(name, COL.name, midY - 1);
+
+      // 🎯 exact
+      ctx.textAlign = 'center';
+      ctx.font = `bold 32px Arial`;
+      ctx.fillStyle = exact > 0 ? GOLD : '#444';
+      ctx.fillText(String(exact), COL.exact, midY - 1);
+
+      // ✅ correct
+      ctx.fillStyle = winner > 0 ? '#4CAF50' : '#444';
+      ctx.fillText(String(winner), COL.winner, midY - 1);
+
+      // Points
+      ctx.textAlign = 'right';
+      ctx.font = `bold ${pts >= 100 ? '36' : '40'}px Arial`;
+      ctx.fillStyle = i === 0 ? GOLD : i === 1 ? SILVER : i === 2 ? BRONZE : '#fff';
+      ctx.fillText(String(pts), COL.pts, midY - 1);
+
+      // Row bottom separator
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(24, y + ROW_H - 1, W - 48, 1);
+    });
+
+    // ── Footer ────────────────────────────────────────────
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(24, H - BOT, W - 48, 1);
+    ctx.textAlign = 'center';
+    ctx.font = '24px Arial';
+    ctx.fillStyle = '#444';
+    ctx.fillText('kpimdad.github.io/kph-wc26', W / 2, H - 24);
+
+    // ── Download / Share ──────────────────────────────────
+    const dataUrl = canvas.toDataURL('image/png');
+    const isIOS   = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      // iOS can't trigger downloads; open in new tab so user can long-press → Save
+      const w = window.open();
+      w.document.write(`<img src="${dataUrl}" style="max-width:100%;display:block">`);
+      showToast('Long-press the image to save', 'success');
+    } else {
+      const link = document.createElement('a');
+      link.download = `kph-wc2026-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = dataUrl;
+      link.click();
+      showToast('Card downloaded! 📷', 'success');
+    }
+  } catch (e) {
+    console.error('Card error:', e);
+    showToast('Could not generate card', 'error');
+  } finally {
+    btn.textContent = '📷';
+    btn.disabled = false;
+  }
 }
 
 function populateLeaderboardFilter() {
@@ -1682,6 +1863,7 @@ function wireEvents() {
 
   // Leaderboard
   document.getElementById('leaderboard-filter').addEventListener('change', e => renderLeaderboard(e.target.value));
+  document.getElementById('lb-download-btn').addEventListener('click', downloadLeaderboardCard);
 
   // Admin
   document.querySelectorAll('#view-admin .tab-btn').forEach(btn =>

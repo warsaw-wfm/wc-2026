@@ -1746,6 +1746,15 @@ body.admin-mode #bottom-nav #my-picks-btn {
 }
 .lb-compare-btn:hover { background: rgba(240,180,41,0.15); }
 
+/* ── Download share-card button ───────────────────── */
+.lb-download-btn {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  padding: 0.32rem 0.6rem;
+  line-height: 1;
+  border-radius: 8px;
+}
+
 /* ── Leaderboard legend ───────────────────────────── */
 .lb-legend {
   margin: 0.75rem 0 0;
