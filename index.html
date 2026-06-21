@@ -22,7 +22,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="style.css?v=20260621c">
+  <link rel="stylesheet" href="style.css?v=20260621d">
 
   <!-- Firebase SDK (compat v9 modular via CDN) -->
   <script type="module">
@@ -276,16 +276,12 @@
      VIEW 4 — LEADERBOARD
      ════════════════════════════════════════ -->
 <div id="view-leaderboard" class="view">
-  <div class="view-header">
-    <div>
-      <h2 class="view-title">Leaderboard</h2>
-    </div>
-    <div style="display:flex;align-items:center;gap:.5rem">
-      <select id="leaderboard-filter" class="filter-select">
-        <option value="overall">Overall</option>
-      </select>
-      <button id="lb-download-btn" class="btn btn-secondary lb-download-btn" title="Download share card">📷</button>
-    </div>
+  <div class="view-header lb-view-header">
+    <h2 class="view-title">Leaderboard</h2>
+    <select id="leaderboard-filter" class="filter-select lb-filter-select">
+      <option value="overall">Overall</option>
+    </select>
+    <button id="lb-download-btn" class="btn btn-secondary lb-share-btn" title="Share leaderboard card">📷</button>
   </div>
 
   <div id="leaderboard-body" class="lb-list">
@@ -547,7 +543,7 @@
 <script>
   function loadApp() {
     const s = document.createElement('script');
-    s.src = 'app.js?v=20260621e';
+    s.src = 'app.js?v=20260621f';
     document.body.appendChild(s);
   }
   if (window.firebaseReady) {

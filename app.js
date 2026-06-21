@@ -1228,19 +1228,19 @@ async function downloadLeaderboardCard() {
     ctx.fillStyle = '#444';
     ctx.fillText('warsaw-wfm.github.io/wc-2026', W / 2, H - 24);
 
-    // ── Download ──────────────────────────────────────────
-    const dataUrl = canvas.toDataURL('image/png');
-    const isIOS   = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (isIOS) {
-      const w = window.open();
-      w.document.write(`<img src="${dataUrl}" style="max-width:100%;display:block">`);
-      showToast('Long-press the image to save 📷', 'success');
+    // ── Share ─────────────────────────────────────────────
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    const file = new File([blob], `warsaw-wfm-wc2026-${new Date().toISOString().slice(0,10)}.png`, { type: 'image/png' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Warsaw WFM WC 2026', text: '🏆 Leaderboard update!' });
     } else {
-      const a = document.createElement('a');
-      a.download = `warsaw-wfm-wc2026-${new Date().toISOString().slice(0, 10)}.png`;
-      a.href = dataUrl;
-      a.click();
-      showToast('Card downloaded! 📷', 'success');
+      // Fallback: open image in new tab so user can save/share manually
+      const url = URL.createObjectURL(blob);
+      const w = window.open();
+      w.document.write(`<img src="${url}" style="max-width:100%;display:block;margin:auto">`);
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      showToast('Long-press the image to save or share', 'success');
     }
   } catch (e) {
     console.error('Card error:', e);

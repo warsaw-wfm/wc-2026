@@ -1770,12 +1770,21 @@ body.admin-mode #bottom-nav #my-picks-btn {
   background: rgba(240,180,41,.06);
 }
 
-/* ── Download share-card button ───────────────────── */
-.lb-download-btn {
+/* ── Leaderboard header — single row, no wrap ──────── */
+.lb-view-header {
+  flex-wrap: nowrap;
+  gap: .5rem;
+}
+.lb-filter-select {
+  flex-shrink: 1;
+  min-width: 0;
+}
+.lb-share-btn {
   flex-shrink: 0;
-  font-size: 1.15rem;
-  padding: 0.32rem 0.6rem;
-  line-height: 1;
+  font-size: 1.1rem;
+  padding: 0 .7rem;
+  height: 36px;
+  line-height: 36px;
   border-radius: 8px;
 }
 
