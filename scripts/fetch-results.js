@@ -4,19 +4,43 @@
  * Fetches finished WC 2026 matches from football-data.org,
  * scores predictions, and updates Firestore.
  *
+ * Smart scheduling logic:
+ *   - Exits IMMEDIATELY (zero Firestore/API calls) if no match is in the
+ *     check window (kickoff+2h → kickoff+6h).
+ *   - Within the window, retries every 15 min via cron until result lands.
+ *   - Stops checking a match after kickoff+6h (assumed delayed/cancelled).
+ *
  * Required env vars:
  *   FOOTBALL_API_KEY          — football-data.org token
  *   FIREBASE_SERVICE_ACCOUNT  — Firebase service account JSON (as a string)
  */
 
 'use strict';
-const https   = require('https');
-const path    = require('path');
-const admin   = require('firebase-admin');
+const https = require('https');
+const admin = require('firebase-admin');
 
-// ── Load MATCHES index (matchId + kickoffUTC + teams) ─────────────────────────
-const MATCHES = require('./matches-index.json');
-console.log('Fixtures loaded:', MATCHES.length);
+const MATCHES   = require('./matches-index.json');
+const now       = Date.now();
+const TWO_HOURS = 2 * 60 * 60 * 1000;
+const SIX_HOURS = 6 * 60 * 60 * 1000;
+
+console.log(`[${new Date().toISOString()}] Starting WC result sync… (${MATCHES.length} fixtures)`);
+
+// ── Step 0: Pre-screen using ONLY the local matches index (zero external calls) ─
+// Only proceed if at least one match sits in the check window: kickoff+2h → kickoff+6h
+// This means: match has been played (2h grace for extra time), but we haven't
+// given up yet (6h cap).  Outside this window the run costs nothing.
+const inWindow = MATCHES.filter(m => {
+  const ko = new Date(m.kickoffUTC).getTime();
+  return ko + TWO_HOURS <= now && now <= ko + SIX_HOURS;
+});
+
+if (inWindow.length === 0) {
+  console.log('No matches in check window (kickoff+2h … kickoff+6h) — exiting with 0 calls.');
+  process.exit(0);
+}
+
+console.log(`${inWindow.length} match(es) in window: ${inWindow.map(m => `${m.teamA} vs ${m.teamB}`).join(', ')}`);
 
 // ── Firebase Admin ────────────────────────────────────────────────────────────
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -56,39 +80,37 @@ function fetchAPI(path) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log(`[${new Date().toISOString()}] Starting WC result sync…`);
-
-  const now = Date.now();
-
-  // ── Step 1: Bulk-fetch already-completed match IDs from Firestore (1 query) ──
+  // ── Step 1: Load already-completed match IDs from Firestore (1 read) ─────────
   const completedSnap = await db.collection('matches').where('status', '==', 'completed').get();
   const completedIds  = new Set();
   completedSnap.forEach(d => completedIds.add(d.id));
   console.log(`Firestore: ${completedIds.size} match(es) already completed`);
 
-  // ── Step 2: Find matches that have kicked off but aren't completed yet ────────
-  const pending = MATCHES.filter(m =>
-    new Date(m.kickoffUTC).getTime() + 2 * 60 * 60 * 1000 < now &&  // kicked off >2h ago
-    !completedIds.has(m.matchId)
-  );
+  // Safety guard: if Firestore returned 0 completed but many matches are "in window",
+  // something is wrong (quota issue, rule misconfiguration) — abort to avoid
+  // re-scoring everything and burning quota.
+  if (completedIds.size === 0 && inWindow.length > 3) {
+    console.error('Safety abort: 0 completed matches returned from Firestore but many in window — possible quota/rules issue. Exiting.');
+    process.exit(1);
+  }
+
+  // ── Step 2: Filter inWindow to genuinely pending (not yet completed) ──────────
+  const pending = inWindow.filter(m => !completedIds.has(m.matchId));
 
   if (pending.length === 0) {
-    console.log('No pending matches — skipping API call.');
-    await db.collection('config').doc('lastSync').set({
-      syncedAt: admin.firestore.FieldValue.serverTimestamp(),
-      matchesUpdated: 0
-    });
-    console.log('Done. 0 match(es) updated.');
+    console.log('All window matches already completed — nothing to do.');
     process.exit(0);
   }
 
-  console.log(`${pending.length} pending match(es) to check:`, pending.map(m => `${m.teamA} vs ${m.teamB}`).join(', '));
+  console.log(`${pending.length} pending match(es) to fetch: ${pending.map(m => `${m.teamA} vs ${m.teamB}`).join(', ')}`);
 
-  // ── Save current rank order BEFORE results change the standings ────────────
+  // ── Step 3: Save rank snapshot BEFORE scoring (captures pre-match standings) ──
   try {
     const usersSnap = await db.collection('users').get();
     const ranked = [];
-    usersSnap.forEach(d => { if (!d.data().disabled) ranked.push({ id: d.id, pts: d.data().totalPoints || 0 }); });
+    usersSnap.forEach(d => {
+      if (!d.data().disabled) ranked.push({ id: d.id, pts: d.data().totalPoints || 0 });
+    });
     ranked.sort((a, b) => b.pts - a.pts);
     const rankMap = {};
     ranked.forEach((u, i) => { rankMap[u.id] = i + 1; });
@@ -97,12 +119,14 @@ async function main() {
       savedAt: admin.firestore.FieldValue.serverTimestamp()
     });
     console.log(`Rank snapshot saved: ${ranked.length} users`);
-  } catch (e) { console.warn('Could not save rank snapshot:', e.message); }
+  } catch (e) {
+    console.warn('Could not save rank snapshot:', e.message);
+  }
 
-  // ── Step 3: Fetch only the date range covering pending matches from the API ───
-  const dates     = pending.map(m => new Date(m.kickoffUTC));
-  const dateFrom  = new Date(Math.min(...dates)).toISOString().slice(0, 10);
-  const dateTo    = new Date(Math.max(...dates) + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  // ── Step 4: Fetch results for just the pending date range ─────────────────────
+  const dates    = pending.map(m => new Date(m.kickoffUTC));
+  const dateFrom = new Date(Math.min(...dates)).toISOString().slice(0, 10);
+  const dateTo   = new Date(Math.max(...dates) + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   let data;
   try {
@@ -113,22 +137,23 @@ async function main() {
   }
 
   const finished = (data.matches || []).filter(m => m.status === 'FINISHED');
-  console.log(`Found ${finished.length} finished match(es) from API in range ${dateFrom} → ${dateTo}`);
-
-  let updated = 0;
+  console.log(`API returned ${finished.length} finished match(es) in range ${dateFrom} → ${dateTo}`);
 
   // Known team name variations between our index and football-data.org
   const TEAM_ALIASES = {
-    'Korea Republic': 'South Korea',
-    'Czech Republic': 'Czechia',
-    'United States': 'USA',
-    'IR Iran': 'Iran',
-    'Côte d\'Ivoire': 'Ivory Coast',
-    'Türkiye': 'Turkey',
+    'Korea Republic':  'South Korea',
+    'Czech Republic':  'Czechia',
+    'United States':   'USA',
+    'IR Iran':         'Iran',
+    "Côte d'Ivoire":  'Ivory Coast',
+    'Türkiye':         'Turkey',
+    'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
   };
   function normalise(name) {
     return (TEAM_ALIASES[name] || name).toLowerCase().replace(/[^a-z]/g, '');
   }
+
+  let updated = 0;
 
   for (const apiMatch of finished) {
     const rA = apiMatch.score?.fullTime?.home;
@@ -144,41 +169,43 @@ async function main() {
       m => Math.abs(new Date(m.kickoffUTC).getTime() - apiTime) < 15 * 60 * 1000
     );
 
-    // Fallback: match by team names if time didn't match
+    // Fallback: match by team names
     if (!ourMatch) {
       ourMatch = pending.find(m =>
         normalise(m.teamA) === apiHomeN && normalise(m.teamB) === apiAwayN
       );
-      if (ourMatch) console.log(`  ⚠️  Time mismatch for ${apiMatch.homeTeam?.name} vs ${apiMatch.awayTeam?.name} — matched by team names`);
+      if (ourMatch) {
+        console.log(`  ⚠️  Time mismatch for ${apiMatch.homeTeam?.name} vs ${apiMatch.awayTeam?.name} — matched by team names`);
+      }
     }
 
     if (!ourMatch) {
-      console.log(`  ⏭  No match for API fixture: ${apiMatch.homeTeam?.name} vs ${apiMatch.awayTeam?.name} @ ${apiMatch.utcDate}`);
+      console.log(`  ⏭  No pending match for: ${apiMatch.homeTeam?.name} vs ${apiMatch.awayTeam?.name} @ ${apiMatch.utcDate}`);
       continue;
     }
 
     // Write result to Firestore
-    const matchRef = db.collection('matches').doc(ourMatch.matchId);
-    await matchRef.set({ resultA: rA, resultB: rB, status: 'completed' }, { merge: true });
+    await db.collection('matches').doc(ourMatch.matchId).set(
+      { resultA: rA, resultB: rB, status: 'completed' },
+      { merge: true }
+    );
 
     // Score all predictions for this match
     const predsSnap = await db.collection('predictions')
       .where('matchId', '==', ourMatch.matchId).get();
 
     const predBatch = db.batch();
-    const deltas = {};
-
+    const deltas    = {};
     predsSnap.forEach(doc => {
-      const p    = doc.data();
-      const pts  = calculatePoints(p.predictedA, p.predictedB, rA, rB);
+      const p   = doc.data();
+      const pts = calculatePoints(p.predictedA, p.predictedB, rA, rB);
       const prev = p.pointsAwarded ?? 0;
       predBatch.update(doc.ref, { pointsAwarded: pts });
       deltas[p.userId] = (deltas[p.userId] || 0) + (pts - prev);
     });
-
     await predBatch.commit();
 
-    // Update user total points
+    // Update user totals in one batch
     const userBatch = db.batch();
     for (const [uid, delta] of Object.entries(deltas)) {
       if (delta === 0) continue;
@@ -194,9 +221,9 @@ async function main() {
     updated++;
   }
 
-  // Write last-sync timestamp to Firestore so the app can show it
+  // Write last-sync timestamp
   await db.collection('config').doc('lastSync').set({
-    syncedAt: admin.firestore.FieldValue.serverTimestamp(),
+    syncedAt:       admin.firestore.FieldValue.serverTimestamp(),
     matchesUpdated: updated
   });
 
