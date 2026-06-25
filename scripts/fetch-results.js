@@ -86,11 +86,12 @@ async function main() {
   completedSnap.forEach(d => completedIds.add(d.id));
   console.log(`Firestore: ${completedIds.size} match(es) already completed`);
 
-  // Safety guard: if Firestore returned 0 completed but many matches are "in window",
-  // something is wrong (quota issue, rule misconfiguration) — abort to avoid
-  // re-scoring everything and burning quota.
-  if (completedIds.size === 0 && inWindow.length > 3) {
-    console.error('Safety abort: 0 completed matches returned from Firestore but many in window — possible quota/rules issue. Exiting.');
+  // Safety guard: if Firestore returned 0 completed IDs but we know matches have
+  // been completed for weeks, something is wrong (quota exhaustion, rules issue).
+  // Use total fixtures kicked off >8h ago as a proxy for expected completions.
+  const oldMatches = MATCHES.filter(m => new Date(m.kickoffUTC).getTime() + 8 * 60 * 60 * 1000 < now);
+  if (completedIds.size === 0 && oldMatches.length > 5) {
+    console.error(`Safety abort: Firestore returned 0 completed matches but ${oldMatches.length} fixtures are >8h old. Possible quota/rules issue.`);
     process.exit(1);
   }
 
@@ -141,17 +142,39 @@ async function main() {
 
   // Known team name variations between our index and football-data.org
   const TEAM_ALIASES = {
-    'Korea Republic':  'South Korea',
-    'Czech Republic':  'Czechia',
-    'United States':   'USA',
-    'IR Iran':         'Iran',
-    "Côte d'Ivoire":  'Ivory Coast',
-    'Türkiye':         'Turkey',
-    'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
+    'Korea Republic':       'South Korea',
+    'Czech Republic':       'Czechia',
+    'United States':        'USA',
+    'IR Iran':              'Iran',
+    "Côte d'Ivoire":       'Ivory Coast',
+    'Ivory Coast':          'Ivory Coast',
+    'Türkiye':              'Turkey',
+    'Bosnia-Herzegovina':   'Bosnia & Herzegovina',
+    'Bosnia and Herzegovina': 'Bosnia & Herzegovina',
+    'Curaçao':              'Curaçao',   // ensure consistent form
+    'Curacao':              'Curaçao',
   };
+
+  // Normalise: strip accents via Unicode decomposition, then remove non-alpha.
+  // e.g. Curaçao → Curacao → curacao (matches both API spellings and our index)
   function normalise(name) {
-    return (TEAM_ALIASES[name] || name).toLowerCase().replace(/[^a-z]/g, '');
+    return (TEAM_ALIASES[name] || name)
+      .normalize('NFD')                 // decompose accented chars: ç → c + combining cedilla
+      .replace(/[̀-ͯ]/g, '')  // remove all combining diacritical marks
+      .toLowerCase()
+      .replace(/[^a-z]/g, '');          // remove remaining non-alpha
   }
+
+  // Build a lookup map from normalised team pair → our pending match.
+  // This is the primary (most reliable) matching strategy.
+  const pendingByTeams = new Map();
+  for (const m of pending) {
+    const key = `${normalise(m.teamA)}|${normalise(m.teamB)}`;
+    pendingByTeams.set(key, m);
+  }
+
+  // Track which pending matches have been claimed to avoid double-assignment.
+  const claimed = new Set();
 
   let updated = 0;
 
@@ -164,18 +187,19 @@ async function main() {
     const apiHomeN = normalise(apiMatch.homeTeam?.name || '');
     const apiAwayN = normalise(apiMatch.awayTeam?.name || '');
 
-    // Primary: match by kickoff time (±15 min tolerance)
-    let ourMatch = pending.find(
-      m => Math.abs(new Date(m.kickoffUTC).getTime() - apiTime) < 15 * 60 * 1000
-    );
+    // Primary: match by TEAM NAMES (most reliable, handles simultaneous kickoffs)
+    const teamKey = `${apiHomeN}|${apiAwayN}`;
+    let ourMatch = pendingByTeams.get(teamKey);
+    if (ourMatch && claimed.has(ourMatch.matchId)) ourMatch = null; // already used
 
-    // Fallback: match by team names
+    // Fallback: match by kickoff time ±15 min (only if name match failed)
     if (!ourMatch) {
       ourMatch = pending.find(m =>
-        normalise(m.teamA) === apiHomeN && normalise(m.teamB) === apiAwayN
+        !claimed.has(m.matchId) &&
+        Math.abs(new Date(m.kickoffUTC).getTime() - apiTime) < 15 * 60 * 1000
       );
       if (ourMatch) {
-        console.log(`  ⚠️  Time mismatch for ${apiMatch.homeTeam?.name} vs ${apiMatch.awayTeam?.name} — matched by team names`);
+        console.log(`  ⚠️  Name mismatch — time-matched ${apiMatch.homeTeam?.name} vs ${apiMatch.awayTeam?.name} → ${ourMatch.teamA} vs ${ourMatch.teamB}`);
       }
     }
 
@@ -183,6 +207,8 @@ async function main() {
       console.log(`  ⏭  No pending match for: ${apiMatch.homeTeam?.name} vs ${apiMatch.awayTeam?.name} @ ${apiMatch.utcDate}`);
       continue;
     }
+
+    claimed.add(ourMatch.matchId); // mark as used so no duplicate assignment
 
     // Write result to Firestore
     await db.collection('matches').doc(ourMatch.matchId).set(
