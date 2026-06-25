@@ -124,10 +124,11 @@ async function main() {
     console.warn('Could not save rank snapshot:', e.message);
   }
 
-  // ── Step 4: Fetch results for just the pending date range ─────────────────────
-  const dates    = pending.map(m => new Date(m.kickoffUTC));
-  const dateFrom = new Date(Math.min(...dates)).toISOString().slice(0, 10);
-  const dateTo   = new Date(Math.max(...dates) + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  // ── Step 4: Fetch results — always yesterday + today only ────────────────────
+  // Hard-caps the API date range to 2 days regardless of how many matches are pending.
+  // Prevents fetching historical data and exhausting the API response size.
+  const dateFrom = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10); // yesterday
+  const dateTo   = new Date().toISOString().slice(0, 10);                                   // today
 
   let data;
   try {
