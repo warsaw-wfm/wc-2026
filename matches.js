@@ -543,102 +543,71 @@ const MATCHES = [
   // Teams TBD based on group results
   // ═══════════════════════════════════════════════════════
 
-  {
-    matchId: "m073", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-06-28T19:00:00Z", venue: "SoFi Stadium, Los Angeles",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m074", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-06-29T19:00:00Z", venue: "NRG Stadium, Houston",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m075", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-06-29T20:30:00Z", venue: "Gillette Stadium, Foxborough",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m076", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-06-30T01:00:00Z", venue: "Estadio BBVA, Monterrey",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m077", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-06-30T17:00:00Z", venue: "AT&T Stadium, Arlington",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m078", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-06-30T21:00:00Z", venue: "MetLife Stadium, East Rutherford",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m079", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-07-01T01:00:00Z", venue: "Estadio Azteca, Mexico City",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m080", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-07-01T16:00:00Z", venue: "Mercedes-Benz Stadium, Atlanta",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m081", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-07-01T20:00:00Z", venue: "Lumen Field, Seattle",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m082", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-07-01T20:00:00Z", venue: "Levi's Stadium, Santa Clara",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m083", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-07-02T19:00:00Z", venue: "SoFi Stadium, Los Angeles",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m084", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-07-02T23:00:00Z", venue: "BMO Field, Toronto",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m085", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-07-03T03:00:00Z", venue: "BC Place, Vancouver",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m086", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-07-03T18:00:00Z", venue: "AT&T Stadium, Arlington",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m087", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-07-03T22:00:00Z", venue: "Hard Rock Stadium, Miami",
-    resultA: null, resultB: null, status: "upcoming"
-  },
-  {
-    matchId: "m088", matchDay: "Round of 32", stage: "R32", group: null,
-    teamA: "TBD", teamB: "TBD", flagA: "🏳", flagB: "🏳",
-    kickoffUTC: "2026-07-04T01:30:00Z", venue: "Arrowhead Stadium, Kansas City",
-    resultA: null, resultB: null, status: "upcoming"
-  },
+   // ── ROUND OF 32 ──────────────────────────────────────
+  { matchId:'m073', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'South Africa', flagA:'🇿🇦', teamB:'Canada',           flagB:'🇨🇦',
+    kickoffUTC:'2026-06-28T19:00:00Z', venue:'Los Angeles',       status:'upcoming' },
+
+  { matchId:'m076', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Brazil',       flagA:'🇧🇷', teamB:'Japan',             flagB:'🇯🇵',
+    kickoffUTC:'2026-06-29T17:00:00Z', venue:'Houston',           status:'upcoming' },
+
+  { matchId:'m074', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Germany',      flagA:'🇩🇪', teamB:'Paraguay',          flagB:'🇵🇾',
+    kickoffUTC:'2026-06-29T20:30:00Z', venue:'Boston',            status:'upcoming' },
+
+  { matchId:'m075', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Netherlands',  flagA:'🇳🇱', teamB:'Morocco',           flagB:'🇲🇦',
+    kickoffUTC:'2026-06-30T01:00:00Z', venue:'Monterrey',         status:'upcoming' },
+
+  { matchId:'m078', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Ivory Coast',  flagA:'🇨🇮', teamB:'Norway',            flagB:'🇳🇴',
+    kickoffUTC:'2026-06-30T17:00:00Z', venue:'Dallas',            status:'upcoming' },
+
+  { matchId:'m077', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'France',       flagA:'🇫🇷', teamB:'Sweden',            flagB:'🇸🇪',
+    kickoffUTC:'2026-06-30T21:00:00Z', venue:'New York',          status:'upcoming' },
+
+  { matchId:'m079', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Mexico',       flagA:'🇲🇽', teamB:'Ecuador',           flagB:'🇪🇨',
+    kickoffUTC:'2026-07-01T01:00:00Z', venue:'Mexico City',       status:'upcoming' },
+
+  { matchId:'m080', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'England',      flagA:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', teamB:'Congo DR',         flagB:'🇨🇩',
+    kickoffUTC:'2026-07-01T16:00:00Z', venue:'Atlanta',           status:'upcoming' },
+
+  { matchId:'m082', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Belgium',      flagA:'🇧🇪', teamB:'Senegal',           flagB:'🇸🇳',
+    kickoffUTC:'2026-07-01T20:00:00Z', venue:'Seattle',           status:'upcoming' },
+
+  { matchId:'m081', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'USA',          flagA:'🇺🇸', teamB:'Bosnia & Herz.',    flagB:'🇧🇦',
+    kickoffUTC:'2026-07-02T00:00:00Z', venue:'San Francisco',     status:'upcoming' },
+
+  { matchId:'m084', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Spain',        flagA:'🇪🇸', teamB:'Austria',           flagB:'🇦🇹',
+    kickoffUTC:'2026-07-02T19:00:00Z', venue:'Los Angeles',       status:'upcoming' },
+
+  { matchId:'m083', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Portugal',     flagA:'🇵🇹', teamB:'Croatia',           flagB:'🇭🇷',
+    kickoffUTC:'2026-07-02T23:00:00Z', venue:'Toronto',           status:'upcoming' },
+
+  { matchId:'m085', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Switzerland',  flagA:'🇨🇭', teamB:'Algeria',           flagB:'🇩🇿',
+    kickoffUTC:'2026-07-03T03:00:00Z', venue:'Vancouver',         status:'upcoming' },
+
+  { matchId:'m088', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Australia',    flagA:'🇦🇺', teamB:'Egypt',             flagB:'🇪🇬',
+    kickoffUTC:'2026-07-03T18:00:00Z', venue:'Dallas',            status:'upcoming' },
+
+  { matchId:'m086', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Argentina',    flagA:'🇦🇷', teamB:'Cabo Verde',        flagB:'🇨🇻',
+    kickoffUTC:'2026-07-03T22:00:00Z', venue:'Miami',             status:'upcoming' },
+
+  { matchId:'m087', stage:'R32', matchDay:'Round of 32', group:null,
+    teamA:'Colombia',     flagA:'🇨🇴', teamB:'Ghana',             flagB:'🇬🇭',
+    kickoffUTC:'2026-07-04T01:30:00Z', venue:'Kansas City',       status:'upcoming' },
+
 
   // ═══════════════════════════════════════════════════════
   // ROUND OF 16 — 8 matches (4–7 Jul)
